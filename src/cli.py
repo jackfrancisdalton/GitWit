@@ -1,10 +1,10 @@
 import typer
 
-app = typer.Typer()
+from commands import show_activity
 
-@app.command()
-def hello():
-    typer.echo("Hello GitWit user!")
+app = typer.Typer()
+app.command()(show_activity.command)
 
 if __name__ == "__main__":
-    app()   # ✅ run app if executed directly
+    app()
+#     
