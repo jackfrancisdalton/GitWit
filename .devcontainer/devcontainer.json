@@ -35,7 +35,7 @@
 			}
 		}
 	},
-	"postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt"
+	"postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt && bash .devcontainer/add-cli-alias-to-path.sh"
 
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
