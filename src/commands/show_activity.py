@@ -1,46 +1,41 @@
 """Show activity (commits) between two dates."""
-from datetime import datetime
 from typing import Sequence
-from git import Commit, Repo
+from git import Commit
 from rich.console import Console
 from rich.table import Table
 import typer
+from src.utils.fetch_commits import fetch_commits_in_date_range
+from src.utils.date_utils import convert_to_datetime
 
+# TODO: create a singleton console with helper functions for easier testing and code reading
 console = Console()
 
 def command(
-    since: str = typer.Option(..., help="Start date in YYYY-MM-DD"),
+    since: str = typer.Option(...,  help="Start date in YYYY-MM-DD"),
     until: str = typer.Option(..., help="End date in YYYY-MM-DD")
 ):
     """
     Show activity (commits) between two dates.
     """
-    _validate_date_format(since, until)
-    commits = _fetch_commits(since, until)
+    try:
+        since_date = convert_to_datetime(since)
+        until_date = convert_to_datetime(until)
+    except ValueError as e:
+        console.print(f"[red]Error: {str(e)}[/red]")
+        raise typer.Exit(code=1)
+
+    commits = fetch_commits_in_date_range(since_date, until_date)
 
     if not commits:
         console.print("[yellow]No commits found in this date range.[/yellow]")
         raise typer.Exit()
 
-    table = _generate_activity_table(since, until, commits)
-    _print_output(table, commits)
+    console.print(_generate_table(since, until, commits))
+    console.print(f"\n[bold green]Summary:[/bold green] {len(commits)} commits.")
 
-
-def _validate_date_format(since: str, until: str) -> None:
+def _generate_table(since: str, until: str, commits: Sequence[Commit]) -> Table:
     """
-    Validate date format YYYY-MM-DD.
-    """
-    try:
-        _ = datetime.strptime(since, "%Y-%m-%d")
-        _ = datetime.strptime(until, "%Y-%m-%d")
-    except ValueError:
-        console.print("[red]Error: Dates must be in YYYY-MM-DD format.[/red]")
-        raise typer.Exit(code=1)
-    
-
-def _generate_activity_table(since: str, until: str, commits: Sequence[Commit]) -> Table:
-    """
-    Generate a table of commits.   
+    Generate a table for display in the CLI.   
     """
     table = Table(title=f"Commits from {since} to {until}")
     table.add_column("Date", style="cyan")
@@ -48,26 +43,14 @@ def _generate_activity_table(since: str, until: str, commits: Sequence[Commit]) 
     table.add_column("Message", style="green")
 
     for commit in commits:
+        message = commit.message
+        if isinstance(message, bytes):
+            message = message.decode("utf-8")
+
         table.add_row(
             str(commit.committed_datetime.date()),
             commit.author.name,
-            commit.message.strip() # TODO: resolve byte|string handling 
+            str(message).strip()
         )
 
     return table
-
-def _fetch_commits(since: str, until: str) -> Sequence[Commit]:
-    """
-    Fetch commits from the repository between two dates.
-    """
-    repo = Repo(".")
-    return list(repo.iter_commits(since=since, until=until))
-
-def _print_output(table: Table, commits) -> None:
-    """
-    Print the table and summary.
-    """
-    console.print(table)
-    console.print(f"\n[bold green]Summary:[/bold green] {len(commits)} commits.")
-
-

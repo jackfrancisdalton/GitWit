@@ -1,6 +1,6 @@
 import typer
 
-from commands import show_activity, who_is_the_expert
+from src.commands import show_activity, who_is_the_expert
 
 app = typer.Typer()
 

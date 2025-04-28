@@ -6,8 +6,8 @@ from unittest.mock import MagicMock
 from git import Commit
 
 def generate_mock_commits(
-        num_commits, 
-        start: Optional[str] = None, 
+        num_commits,
+        start: Optional[str] = None,
         end: Optional[str] = None
 ) -> list[Commit]:
     users = ["user1", "user2", "user3"]
