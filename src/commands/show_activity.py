@@ -8,6 +8,15 @@ from src.utils.fetch_commits import fetch_commits_in_date_range
 from src.utils.date_utils import convert_to_datetime
 
 # TODO: create a singleton console with helper functions for easier testing and code reading
+
+# TODO: modify this command in the future to show an overview of all the activity over a given period like:
+# - number of commits, prs, code lines committed
+# - comparison to activity in the last period of the same length
+# - biggest contributors
+# - largest commits that changed in the period
+# - most active files
+# - most active authors
+
 console = Console()
 
 def command(

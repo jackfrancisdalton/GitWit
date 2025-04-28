@@ -5,6 +5,8 @@ import typer
 from git import Repo
 from rich.table import Table
 
+# TODO Add support for a path based version of the command
+
 console = Console()
 
 def command(
@@ -69,7 +71,7 @@ def _generate_table(file: str, author_counts: Counter, number_of_authors: int, t
             author, 
             str(count), 
             f"{((count / total_lines) * 100):.1f}%", 
-            'TODO'
+            'TODO' # TODO: implement logic to get the last touched date
         )
 
     return table
