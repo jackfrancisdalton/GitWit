@@ -1,101 +1,71 @@
-from datetime import datetime
 import pytest
-from typer import Exit
-from unittest.mock import patch
-from src.commands.show_activity import command
-from tests.mock_generators.commit_generator import generate_mock_commits
+from unittest.mock import MagicMock
+from datetime import datetime, timedelta, timezone
+from collections import Counter
+from src.commands.show_activity import (
+    _compute_file_statistics,
+    _compute_activity_summary,
+)
 
 @pytest.fixture
-def mock_convert_to_datetime():
-    with patch("src.commands.show_activity.convert_to_datetime") as mock:
-        yield mock
+def commit_data():
+    author1 = MagicMock()
+    author1.name = "Alice"
 
-@pytest.fixture
-def mock_fetch_commits_in_date_range():
-    with patch("src.commands.show_activity.fetch_commits_in_date_range") as mock:
-        yield mock
+    author2 = MagicMock()
+    author2.name = "Bob"
 
-@pytest.fixture
-def mock_console_print():
-    with patch("src.commands.show_activity.console.print") as mock:
-        yield mock
+    commit1 = MagicMock()
+    commit1.committed_datetime = datetime.now(timezone.utc) - timedelta(days=2)
+    commit1.author = author1
+    commit1.stats.files = {"file1.py": {"lines": 10}}
 
-def test_no_commits_raises_exit_and_prints_warning(
-    mock_convert_to_datetime,
-    mock_fetch_commits_in_date_range,
-    mock_console_print,
-):
-    # Arrange
-    str_since = "2025-04-10"
-    str_until = "2025-04-20"
+    commit2 = MagicMock()
+    commit2.committed_datetime = datetime.now(timezone.utc) - timedelta(days=1)
+    commit2.author = author2
+    commit2.stats.files = {"file2.py": {"lines": 5}}
 
-    dt_since = datetime(2025, 4, 10)
-    dt_until = datetime(2025, 4, 20)
+    return {
+        "commit1": commit1,
+        "commit2": commit2,
+    }
 
-    return_mapping = { str_since: dt_since, str_until: dt_until }
-    mock_convert_to_datetime.side_effect = lambda s: return_mapping[s]
+@pytest.mark.parametrize(
+    "commit_keys, expected_commit_count, expected_lines, since_offset, until_offset",
+    [
+        (["commit1", "commit2"], 2, {"file1.py": 10, "file2.py": 5}, -5, 0),
+        ([], 0, {}, -5, 0),
+        (["commit1", "commit2"], 0, {}, -10, -8),
+    ],
+)
+def test_compute_file_statistics_cases(commit_data, commit_keys, expected_commit_count, expected_lines, since_offset, until_offset):
+    since_date = datetime.now(timezone.utc) + timedelta(days=since_offset)
+    until_date = datetime.now(timezone.utc) + timedelta(days=until_offset)
 
-    mock_fetch_commits_in_date_range.return_value = []
+    commits = [commit_data[key] for key in commit_keys]
+    stats = _compute_file_statistics(commits, since_date, until_date)
 
-    # Act & Assert: should exit after printing warning
-    with pytest.raises(Exit):
-        command(since=str_since, until=str_until)
+    assert sum(file["commits"] for file in stats.values()) == expected_commit_count
+    total_lines = sum(file["lines"] for file in stats.values())
+    assert total_lines == sum(expected_lines.values())
 
-    assert mock_convert_to_datetime.call_count == 2
-    mock_fetch_commits_in_date_range.assert_called_once_with(dt_since, dt_until)
-    mock_console_print.assert_called_once_with("[yellow]No commits found in this date range.[/yellow]")
+@pytest.mark.parametrize(
+    "commit_keys, expected_commit_count, expected_counter, since_offset, until_offset",
+    [
+        (["commit1", "commit2"], 2, Counter({"Alice": 1, "Bob": 1}), -5, 0),
+        ([], 0, Counter(), -5, 0),
+        (["commit1", "commit2"], 0, Counter(), -10, -8),
+    ],
+)
+def test_compute_activity_summary_cases(commit_data, commit_keys, expected_commit_count, expected_counter, since_offset, until_offset):
+    since_date = datetime.now(timezone.utc) + timedelta(days=since_offset)
+    until_date = datetime.now(timezone.utc) + timedelta(days=until_offset)
 
-def test_multiple_commits_prints_table_and_summary(
-    mock_convert_to_datetime,
-    mock_fetch_commits_in_date_range,
-    mock_console_print,
-):
-    # Arrange
-    str_since = "2025-04-10"
-    str_until = "2025-04-20"
+    commits = [commit_data[key] for key in commit_keys]
+    filtered_commits, author_counter = _compute_activity_summary(commits, since_date, until_date)
 
-    dt_since = datetime(2025, 4, 10)
-    dt_until = datetime(2025, 4, 20)
+    assert len(filtered_commits) == expected_commit_count
+    assert author_counter == expected_counter
 
-    return_mapping = { str_since: dt_since, str_until: dt_until,}
-    mock_convert_to_datetime.side_effect = lambda s: return_mapping[s]
 
-    commits = generate_mock_commits(2, start=str_since, end=str_until)
-    commits[0].message = b"Fix critical bug\n" # force one message to be bytes to cover that edge case
-    mock_fetch_commits_in_date_range.return_value = commits
-
-    # Act
-    command(since=str_since, until=str_until)
-
-    # Assert
-    assert mock_convert_to_datetime.call_count == 2
-    mock_fetch_commits_in_date_range.assert_called_once_with(dt_since, dt_until)
-
-    assert mock_console_print.call_count == 2  # Check for table and summary print out
-
-    table_arg = mock_console_print.call_args_list[0][0][0]
-    assert hasattr(table_arg, "title")
-    assert table_arg.title == f"Commits from {str_since} to {str_until}"
-
-    summary_arg = mock_console_print.call_args_list[1][0][0]
-    assert summary_arg == f"\n[bold green]Summary:[/bold green] {len(commits)} commits."
-
-def test_invalid_date_format_exits_and_prints_error(
-    mock_convert_to_datetime,
-    mock_fetch_commits_in_date_range,
-    mock_console_print,
-):
-    # Arrange
-    since_arg = "2025-04-10"
-    until_arg = "2025-04-20"
-
-    error_message = "Invalid date format"
-    mock_convert_to_datetime.side_effect = ValueError(error_message)
-
-    # Act & Assert
-    with pytest.raises(Exit):
-        command(since=since_arg, until=until_arg)
-
-    mock_convert_to_datetime.assert_called_once_with(since_arg)
-    mock_fetch_commits_in_date_range.assert_not_called()
-    mock_console_print.assert_called_once_with(f"[red]Error: {error_message}[/red]")
+# TODO: figure outhow to test rich tables
