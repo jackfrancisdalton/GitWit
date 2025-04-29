@@ -2,44 +2,30 @@
 
 from typing import Sequence, Dict, Any, Tuple
 from git import Commit
-from rich.console import Console
 from rich.table import Table
 from collections import defaultdict, Counter
 import typer
 from datetime import datetime, timedelta, timezone
 from src.utils.fetch_commits import fetch_commits_in_date_range
 from src.utils.date_utils import convert_to_datetime
-
-
-# TODO: move to dedicated shared file in utils module
-class ConsoleSingleton:
-    """Singleton Console instance for consistent output formatting."""
-
-    _console = None
-
-    @classmethod
-    def get_console(cls) -> Console:
-        if cls._console is None:
-            cls._console = Console()
-        return cls._console
-
+from src.utils.console_singleton import ConsoleSingleton
 
 console = ConsoleSingleton.get_console()
 
-
 def command(
     since: str = typer.Option(
-        (datetime.now(timezone.utc) - timedelta(days=10)).strftime("%Y-%m-%d"), # Default to 10 days ago
+        (datetime.now() - timedelta(days=10)).strftime("%Y-%m-%d"), # Default to 10 days ago
         help="Start date in YYYY-MM-DD",
     ),
     until: str = typer.Option(
-        datetime.now(timezone.utc).strftime("%Y-%m-%d"), # Default to today
+        datetime.now().strftime("%Y-%m-%d"), # Default to today
         help="End date in YYYY-MM-DD",
     ),
 ):
     """Main command to show detailed Git activity report."""
 
-    since_date, until_date = _parse_dates(since, until)
+    since_date = convert_to_datetime(since).replace(tzinfo=timezone.utc)
+    until_date = convert_to_datetime(until).replace(tzinfo=timezone.utc)
     commits = fetch_commits_in_date_range(since_date, until_date)
 
     if not commits:
@@ -47,15 +33,6 @@ def command(
         raise typer.Exit()
 
     _show_activity_summary(commits, since_date, until_date)
-
-
-def _parse_dates(since: str, until: str):
-    """Convert input dates to timezone-aware datetime objects."""
-    try:
-        return convert_to_datetime(since).replace(tzinfo=timezone.utc), convert_to_datetime(until).replace(tzinfo=timezone.utc)
-    except ValueError as e:
-        console.print(f"[red]Date Error: {str(e)}[/red]")
-        raise typer.Exit(code=1)
 
 
 def _show_activity_summary(commits: Sequence[Commit], since_date, until_date) -> None:
@@ -70,14 +47,16 @@ def _show_activity_summary(commits: Sequence[Commit], since_date, until_date) ->
     console.print(file_stats_table)
     console.print(activity_summary_table)
 
+# ================================================================================
+# Computation Functions
+# ================================================================================
 
-def _compute_file_statistics(commits: Sequence[Commit], since_date, until_date, result_limit: int = 10) -> Dict[str, Any]:
+def _compute_file_statistics(commits: Sequence[Commit], since_date: datetime, until_date: datetime, result_limit: int = 10) -> Dict[str, Any]:
     """Compute statistics about file activity considering date range."""
     file_stats = defaultdict(lambda: {"commits": 0, "lines": 0, "authors": Counter()})
 
     for commit in commits:
-        commit_datetime = commit.committed_datetime.astimezone(timezone.utc)
-        if since_date <= commit_datetime <= until_date:
+        if since_date <= commit.committed_datetime.astimezone(timezone.utc) <= until_date:
             for file, details in commit.stats.files.items():
                 file_stats[file]["commits"] += 1
                 file_stats[file]["lines"] += details.get("lines", 0)
@@ -89,6 +68,18 @@ def _compute_file_statistics(commits: Sequence[Commit], since_date, until_date, 
 
     return sorted_file_stats
 
+
+def _compute_activity_summary(commits: Sequence[Commit], since_date: datetime, until_date: datetime) -> Tuple[Sequence[Commit], Counter]:
+    """Filter commits and count author activity considering date range."""
+    filtered_commits = [commit for commit in commits if since_date <= commit.committed_datetime.astimezone(timezone.utc) <= until_date]
+    author_activity = Counter(commit.author.name for commit in filtered_commits)
+
+    return filtered_commits, author_activity
+
+
+# ================================================================================
+# Table Generators
+# ================================================================================
 
 def _generate_file_statistics_table(file_stats: Dict[str, Any]) -> Table:
     """Generate a table of file statistics."""
@@ -110,15 +101,6 @@ def _generate_file_statistics_table(file_stats: Dict[str, Any]) -> Table:
         )
 
     return table
-
-
-def _compute_activity_summary(commits: Sequence[Commit], since_date, until_date) -> Tuple[Sequence[Commit], Counter]:
-    """Filter commits and count author activity considering date range."""
-    filtered_commits = [commit for commit in commits if since_date <= commit.committed_datetime.astimezone(timezone.utc) <= until_date]
-    author_activity = Counter(commit.author.name for commit in filtered_commits)
-
-    return filtered_commits, author_activity
-
 
 def _generate_activity_summary_table(author_activity: Counter, filtered_commits: Sequence[Commit]) -> Table:
     """Generate a summary table of commit activity."""
