@@ -2,26 +2,29 @@ import pytest
 from unittest.mock import MagicMock
 from datetime import datetime, timedelta, timezone
 from collections import Counter
+
 from src.commands.show_activity import (
     _compute_file_statistics,
     _compute_author_activity_statistics,
+    FileStats,
+    AuthorActivityStats,
 )
 
 @pytest.fixture
 def commit_data():
+    now = datetime.now(timezone.utc)
     author1 = MagicMock()
     author1.name = "Alice"
-
     author2 = MagicMock()
     author2.name = "Bob"
 
     commit1 = MagicMock()
-    commit1.committed_datetime = datetime.now(timezone.utc) - timedelta(days=2)
+    commit1.committed_datetime = now - timedelta(days=2)
     commit1.author = author1
     commit1.stats.files = {"file1.py": {"lines": 10}}
 
     commit2 = MagicMock()
-    commit2.committed_datetime = datetime.now(timezone.utc) - timedelta(days=1)
+    commit2.committed_datetime = now - timedelta(days=1)
     commit2.author = author2
     commit2.stats.files = {"file2.py": {"lines": 5}}
 
@@ -31,41 +34,67 @@ def commit_data():
     }
 
 @pytest.mark.parametrize(
-    "commit_keys, expected_commit_count, expected_lines, since_offset, until_offset",
+    "commit_keys, expected_commit_count, expected_lines",
     [
-        (["commit1", "commit2"], 2, {"file1.py": 10, "file2.py": 5}, -5, 0),
-        ([], 0, {}, -5, 0),
-        (["commit1", "commit2"], 0, {}, -10, -8),
+        (["commit1", "commit2"], 2, {"file1.py": 10, "file2.py": 5}),
+        ([], 0, {}),
+        (["commit1"], 1, {"file1.py": 10}),
     ],
 )
-def test_compute_file_statistics_cases(commit_data, commit_keys, expected_commit_count, expected_lines, since_offset, until_offset):
-    since_date = datetime.now(timezone.utc) + timedelta(days=since_offset)
-    until_date = datetime.now(timezone.utc) + timedelta(days=until_offset)
-
+def test_compute_file_statistics_cases(commit_data, commit_keys, expected_commit_count, expected_lines):
     commits = [commit_data[key] for key in commit_keys]
-    stats = _compute_file_statistics(commits, since_date, until_date)
-
-    assert sum(file["commits"] for file in stats.values()) == expected_commit_count
-    total_lines = sum(file["lines"] for file in stats.values())
-    assert total_lines == sum(expected_lines.values())
+    stats_list = _compute_file_statistics(commits)
+    
+    # List of FileStats
+    assert isinstance(stats_list, list)
+    assert all(isinstance(fs, FileStats) for fs in stats_list)
+    
+    # Commit counts and total lines
+    assert sum(fs.commits for fs in stats_list) == expected_commit_count
+    assert sum(fs.lines for fs in stats_list) == sum(expected_lines.values())
+    
+    # Per-file lines mapping
+    result_map = {fs.file: fs.lines for fs in stats_list}
+    assert result_map == expected_lines
 
 @pytest.mark.parametrize(
-    "commit_keys, expected_commit_count, expected_counter, since_offset, until_offset",
+    "commit_keys, expected_commit_count, expected_counter",
     [
-        (["commit1", "commit2"], 2, Counter({"Alice": 1, "Bob": 1}), -5, 0),
-        ([], 0, Counter(), -5, 0),
-        (["commit1", "commit2"], 0, Counter(), -10, -8),
+        (["commit1", "commit2"], 2, Counter({"Alice": 1, "Bob": 1})),
+        ([], 0, Counter()),
+        (["commit2"], 1, Counter({"Bob": 1})),
     ],
 )
-def test_compute_activity_summary_cases(commit_data, commit_keys, expected_commit_count, expected_counter, since_offset, until_offset):
-    since_date = datetime.now(timezone.utc) + timedelta(days=since_offset)
-    until_date = datetime.now(timezone.utc) + timedelta(days=until_offset)
-
+def test_compute_author_activity_statistics_cases(commit_data, commit_keys, expected_commit_count, expected_counter):
     commits = [commit_data[key] for key in commit_keys]
-    filtered_commits, author_counter = _compute_author_activity_statistics(commits, since_date, until_date)
-
-    assert len(filtered_commits) == expected_commit_count
-    assert author_counter == expected_counter
-
-
-# TODO: figure outhow to test rich tables
+    stats = _compute_author_activity_statistics(commits)
+    
+    # Return type
+    assert isinstance(stats, AuthorActivityStats)
+    
+    # Basic counts
+    assert stats.total_commits == expected_commit_count
+    assert stats.num_authors == len(expected_counter)
+    
+    # Top contributor
+    if expected_counter:
+        top, count = expected_counter.most_common(1)[0]
+    else:
+        top, count = "", 0
+    assert stats.top_contributor == top
+    assert stats.top_contributor_commits == count
+    
+    # Total lines
+    total_lines = sum(
+        details.get("lines", 0)
+        for commit in commits
+        for details in commit.stats.files.values()
+    )
+    assert stats.total_lines == total_lines
+    
+    # Last commit date
+    if commits:
+        expected_last = max(c.committed_datetime for c in commits).strftime("%Y-%m-%d")
+    else:
+        expected_last = "N/A"
+    assert stats.last_commit_date == expected_last
