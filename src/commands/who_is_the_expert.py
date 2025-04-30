@@ -18,7 +18,7 @@ console = ConsoleSingleton.get_console()
 
 def command(
     file: str = typer.Option(..., help="Path to the file to analyze"),
-    num_results: int = typer.Option(5, help="Number of top experts to display")
+    num_results: int = typer.Option(5, help="Number of top authors to display")
 ):
     """
     Determine who the expert is for a given file based on who has committed the most and who committed latest
@@ -57,23 +57,23 @@ def _compute_author_activity_data(file_path: Path) -> List[AuthorActivityData]:
 
     authors_data = {}
     
-    for line in blame_list:
-        author = line.author
-        commit_date = datetime.fromtimestamp(line.author_time)
+    for blame in blame_list:
+        author = blame.author
+        commit_date = datetime.fromtimestamp(blame.author_time)
         
         if author not in authors_data:
             authors_data[author] = AuthorActivityData(
                 author=author,
                 line_count=0,
                 last_commit_date=commit_date,
-                last_commit_message=line.summary,
+                last_commit_message=blame.summary,
             )
 
-        authors_data[author].line_count += line.num_lines
+        authors_data[author].line_count += blame.num_lines
 
         if commit_date > authors_data[author].last_commit_date:
             authors_data[author].last_commit_date = commit_date
-            authors_data[author].last_commit_message = line.summary
+            authors_data[author].last_commit_message = blame.summary
 
     return list(authors_data.values())
 
@@ -84,10 +84,7 @@ def _generate_table(
     num_results: int
 ) -> Table:
     """
-    Generate a table for display in the CLI consuming the authorGitData dict.
-    Each author entry in authorGitData is expected to have:
-      - count: int
-      - last_touched: datetime or None
+    Generate a table for display in the CLI consuming a List[AuthorActivityData].
     """
     # Calculate total lines across all authors
     total_lines = sum(data.line_count for data in author_data)
