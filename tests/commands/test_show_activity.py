@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from collections import Counter
 from src.commands.show_activity import (
     _compute_file_statistics,
-    _compute_activity_summary,
+    _compute_author_activity_statistics,
 )
 
 @pytest.fixture
@@ -62,7 +62,7 @@ def test_compute_activity_summary_cases(commit_data, commit_keys, expected_commi
     until_date = datetime.now(timezone.utc) + timedelta(days=until_offset)
 
     commits = [commit_data[key] for key in commit_keys]
-    filtered_commits, author_counter = _compute_activity_summary(commits, since_date, until_date)
+    filtered_commits, author_counter = _compute_author_activity_statistics(commits, since_date, until_date)
 
     assert len(filtered_commits) == expected_commit_count
     assert author_counter == expected_counter

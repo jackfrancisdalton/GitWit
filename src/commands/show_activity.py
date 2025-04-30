@@ -1,9 +1,10 @@
 """Enhanced Git activity report between two dates."""
 
-from typing import Sequence, Dict, Any, Tuple
+from dataclasses import dataclass, field
+from typing import List, Sequence, Dict
 from git import Commit
 from rich.table import Table
-from collections import defaultdict, Counter
+from collections import Counter
 import typer
 from datetime import datetime, timedelta, timezone
 from src.utils.fetch_commits import fetch_commits_in_date_range
@@ -11,6 +12,23 @@ from src.utils.date_utils import convert_to_datetime
 from src.utils.console_singleton import ConsoleSingleton
 
 console = ConsoleSingleton.get_console()
+
+@dataclass
+class FileStats:
+    file: str
+    commits: int = 0
+    lines: int = 0
+    authors: Counter = field(default_factory=Counter)
+
+@dataclass
+class AuthorActivityStats:
+    total_commits: int
+    num_authors: int
+    top_contributor: str
+    top_contributor_commits: int
+    total_lines: int
+    last_commit_date: str
+
 
 def command(
     since: str = typer.Option(
@@ -32,56 +50,98 @@ def command(
         console.print("[yellow]No commits found in this date range.[/yellow]")
         raise typer.Exit()
 
-    _show_activity_summary(commits, since_date, until_date)
+    commits_in_time_range = [
+        commit for commit in commits
+        if since_date <= commit.committed_datetime.astimezone(timezone.utc) <= until_date
+    ]
+    
+    file_stats = _compute_file_statistics(commits_in_time_range)
+    activity_stats = _compute_author_activity_statistics(commits_in_time_range)
 
-
-def _show_activity_summary(commits: Sequence[Commit], since_date, until_date) -> None:
-    """Display detailed summary of Git activity."""
-
-    file_stats = _compute_file_statistics(commits, since_date, until_date)
     file_stats_table = _generate_file_statistics_table(file_stats)
-
-    filtered_commits, author_activity = _compute_activity_summary(commits, since_date, until_date)
-    activity_summary_table = _generate_activity_summary_table(author_activity, filtered_commits)
+    activity_summary_table = _generate_activity_summary_table(activity_stats)
 
     console.print(file_stats_table)
     console.print(activity_summary_table)
+
 
 # ================================================================================
 # Computation Functions
 # ================================================================================
 
-def _compute_file_statistics(commits: Sequence[Commit], since_date: datetime, until_date: datetime, result_limit: int = 10) -> Dict[str, Any]:
-    """Compute statistics about file activity considering date range."""
-    file_stats = defaultdict(lambda: {"commits": 0, "lines": 0, "authors": Counter()})
+def _compute_file_statistics(
+    commits: Sequence[Commit],
+    result_limit: int = 10
+) -> List[FileStats]:
+    """
+    Compute statistics about file activity considering date range,
+    returning a sorted list of FileStats.
+    """
+    stats_map: Dict[str, FileStats] = {}
 
     for commit in commits:
-        if since_date <= commit.committed_datetime.astimezone(timezone.utc) <= until_date:
-            for file, details in commit.stats.files.items():
-                file_stats[file]["commits"] += 1
-                file_stats[file]["lines"] += details.get("lines", 0)
-                file_stats[file]["authors"][commit.author.name] += 1
+        for fname, details in commit.stats.files.items():
+            fname = str(fname)
+            fs = stats_map.get(fname)
+            
+            if fs is None:
+                fs = FileStats(file=fname)
+                stats_map[fname] = fs
 
-    sorted_file_stats = dict(
-        sorted(file_stats.items(), key=lambda item: item[1]["lines"], reverse=True)[:result_limit]
+            fs.commits += 1
+            fs.lines += details.get("lines", 0)
+            fs.authors[commit.author.name] += 1
+
+    # sort by total lines changed, descending, and trim to limit
+    sorted_list = sorted(
+        stats_map.values(),
+        key=lambda fs: fs.lines,
+        reverse=True
+    )[:result_limit]
+
+    return sorted_list
+
+
+
+def _compute_author_activity_statistics(commits: Sequence[Commit]) -> AuthorActivityStats:
+    """Filter commits and count author activity considering date range."""
+    author_commit_count = Counter(c.author.name for c in commits)
+
+    total_commits = len(commits)
+    num_authors = len(author_commit_count)
+    top_contributor, top_contributor_commits = ("", 0)
+
+    if author_commit_count:
+        top_contributor, top_contributor_commits = author_commit_count.most_common(1)[0]
+
+    total_lines = sum(
+        details.get("lines", 0)
+        for commit in commits
+        for details in commit.stats.files.values()
     )
 
-    return sorted_file_stats
+    last_commit_date = max(
+        (commit.committed_datetime.astimezone(timezone.utc) for commit in commits),
+        default="N/A"
+    )
+    last_commit_date_str = last_commit_date.strftime("%Y-%m-%d") if last_commit_date != "N/A" else "N/A"
 
+    return AuthorActivityStats(
+        total_commits=total_commits,
+        num_authors=num_authors,
+        top_contributor=top_contributor or "",
+        top_contributor_commits=top_contributor_commits,
+        total_lines=total_lines,
+        last_commit_date=last_commit_date_str,
+    )
 
-def _compute_activity_summary(commits: Sequence[Commit], since_date: datetime, until_date: datetime) -> Tuple[Sequence[Commit], Counter]:
-    """Filter commits and count author activity considering date range."""
-    filtered_commits = [commit for commit in commits if since_date <= commit.committed_datetime.astimezone(timezone.utc) <= until_date]
-    author_activity = Counter(commit.author.name for commit in filtered_commits)
-
-    return filtered_commits, author_activity
 
 
 # ================================================================================
 # Table Generators
 # ================================================================================
 
-def _generate_file_statistics_table(file_stats: Dict[str, Any]) -> Table:
+def _generate_file_statistics_table(file_stats: List[FileStats]) -> Table:
     """Generate a table of file statistics."""
     table = Table(title="File Statistics")
     table.add_column("File", style="cyan")
@@ -89,20 +149,20 @@ def _generate_file_statistics_table(file_stats: Dict[str, Any]) -> Table:
     table.add_column("Lines Changed", style="green")
     table.add_column("Top Authors", style="yellow")
 
-    for file, stats in file_stats.items():
+    for stats in file_stats:
         top_authors = ", ".join(
-            f"{author} ({count})" for author, count in stats["authors"].most_common(3)
+            f"{author} ({count})" for author, count in stats.authors.most_common(3)
         )
         table.add_row(
-            file,
-            str(stats["commits"]),
-            str(stats["lines"]),
+            stats.file,
+            str(stats.commits),
+            str(stats.lines),
             top_authors,
         )
 
     return table
 
-def _generate_activity_summary_table(author_activity: Counter, filtered_commits: Sequence[Commit]) -> Table:
+def _generate_activity_summary_table(activityStats: AuthorActivityStats) -> Table:
     """Generate a summary table of commit activity."""
     table = Table(title="Commit Activity Summary")
     table.add_column("Total Commits", style="bold green")
@@ -111,30 +171,12 @@ def _generate_activity_summary_table(author_activity: Counter, filtered_commits:
     table.add_column("Lines Committed", style="bold blue")
     table.add_column("Last Commit Date", style="bold yellow")
 
-    total_commits = len(filtered_commits)
-    contributors = len(author_activity)
-    top_contributor, top_commits = ("", 0)
-    if author_activity:
-        top_contributor, top_commits = author_activity.most_common(1)[0]
-
-    total_lines = sum(
-        details.get("lines", 0)
-        for commit in filtered_commits
-        for details in commit.stats.files.values()
-    )
-
-    last_commit_date = max(
-        (commit.committed_datetime.astimezone(timezone.utc) for commit in filtered_commits),
-        default="N/A"
-    )
-    last_commit_date_str = last_commit_date.strftime("%Y-%m-%d") if last_commit_date != "N/A" else "N/A"
-
     table.add_row(
-        str(total_commits),
-        str(contributors),
-        f"{top_contributor} ({top_commits} commits)",
-        str(total_lines),
-        last_commit_date_str,
+        str(activityStats.total_commits),
+        str(activityStats.num_authors),
+        f"{activityStats.top_contributor} ({activityStats.top_contributor_commits} commits)",
+        str(activityStats.total_lines),
+        activityStats.last_commit_date,
     )
 
     return table
