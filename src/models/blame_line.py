@@ -18,3 +18,4 @@ class BlameLine:
     summary: str
     filename: str
     content: str
+    previous: str = ""

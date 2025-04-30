@@ -42,8 +42,8 @@ def commit_data():
     ],
 )
 def test_compute_file_statistics_cases(commit_data, commit_keys, expected_commit_count, expected_lines):
-    commits = [commit_data[key] for key in commit_keys]
-    stats_list = _compute_file_statistics(commits)
+    mock_commits = [commit_data[key] for key in commit_keys]
+    stats_list = _compute_file_statistics(mock_commits)
     
     # List of FileStats
     assert isinstance(stats_list, list)
@@ -66,8 +66,8 @@ def test_compute_file_statistics_cases(commit_data, commit_keys, expected_commit
     ],
 )
 def test_compute_author_activity_statistics_cases(commit_data, commit_keys, expected_commit_count, expected_counter):
-    commits = [commit_data[key] for key in commit_keys]
-    stats = _compute_author_activity_statistics(commits)
+    mock_commits = [commit_data[key] for key in commit_keys]
+    stats = _compute_author_activity_statistics(mock_commits)
     
     # Return type
     assert isinstance(stats, AuthorActivityStats)
@@ -87,14 +87,14 @@ def test_compute_author_activity_statistics_cases(commit_data, commit_keys, expe
     # Total lines
     total_lines = sum(
         details.get("lines", 0)
-        for commit in commits
+        for commit in mock_commits
         for details in commit.stats.files.values()
     )
     assert stats.total_lines == total_lines
     
     # Last commit date
-    if commits:
-        expected_last = max(c.committed_datetime for c in commits).strftime("%Y-%m-%d")
+    if mock_commits:
+        expected_last = max(c.committed_datetime for c in mock_commits).strftime("%Y-%m-%d")
     else:
         expected_last = "N/A"
     assert stats.last_commit_date == expected_last

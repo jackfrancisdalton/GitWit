@@ -14,7 +14,7 @@ def fetch_file_gitblame(repo: Repo, file_path: Path) -> List[BlameLine]:
         raw_blame_info = repo.git.blame("--line-porcelain", str(file_path)).splitlines()
         blame_list = _parse_porcelain_blame(raw_blame_info)
     except Exception as e:
-        raise BlameFetchError(f"failed to fetch or parse blame for {file_path}") from e
+        raise BlameFetchError(f"failed to fetch or parse blame for {file_path} with error {e}") from e
 
     return blame_list
 
@@ -27,6 +27,7 @@ def _parse_porcelain_blame(blame_lines_str: List[str]) -> List[BlameLine]:
 
         # --- 1) Is this a header? ---
         parts = raw.split()
+
         if len(parts) >= 3 and HEX_SHA.match(parts[0]):
             sha = parts[0]
             orig = int(parts[1])
@@ -55,7 +56,6 @@ def _parse_porcelain_blame(blame_lines_str: List[str]) -> List[BlameLine]:
                 val = int(val)
             current[key] = val
             continue
-
-        # anything else we can ignore
+        
 
     return blame_lines
