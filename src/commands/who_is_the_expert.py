@@ -47,7 +47,7 @@ def command(
     table = _generate_table(target, authors, num_results)
     console.print(table)
 
-
+# TODO: this need to be improved to ignore untracked directories
 def _gather_blame_entries(repo: Repo, target: Path) -> List[BlameLine]:
     """
     Return a combined list of blame entries for a file or all files under a directory.
