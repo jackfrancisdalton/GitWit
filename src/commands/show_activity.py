@@ -7,9 +7,9 @@ from rich.table import Table
 from collections import Counter
 import typer
 from datetime import datetime, timedelta, timezone
-from src.utils.fetch_commits import fetch_commits_in_date_range
-from src.utils.date_utils import convert_to_datetime
-from src.utils.console_singleton import ConsoleSingleton
+from ..utils.fetch_commits import fetch_commits_in_date_range
+from ..utils.date_utils import convert_to_datetime
+from ..utils.console_singleton import ConsoleSingleton
 
 console = ConsoleSingleton.get_console()
 

@@ -5,9 +5,9 @@ from typing import List
 import typer
 from git import Repo
 from rich.table import Table
-from src.models.blame_line import BlameLine
-from src.utils.console_singleton import ConsoleSingleton
-from src.utils.fetch_git_blame import fetch_file_gitblame
+from ..models.blame_line import BlameLine
+from ..utils.console_singleton import ConsoleSingleton
+from ..utils.fetch_git_blame import fetch_file_gitblame
 
 @dataclass
 class AuthorActivityData:
