@@ -9,7 +9,6 @@ from src.models.blame_line import BlameLine
 from src.utils.console_singleton import ConsoleSingleton
 from src.utils.fetch_git_blame import fetch_file_gitblame
 
-# TODO: replace the existing blame with this one
 @dataclass
 class AuthorActivityData:
     author: str
