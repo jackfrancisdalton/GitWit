@@ -4,7 +4,7 @@ from typing import List
 import typer
 from git import Repo
 from rich.table import Table
-from ..utils.console_singleton import ConsoleSingleton
+from utils.console_singleton import ConsoleSingleton
 
 @dataclass
 class DeveloperActivity:

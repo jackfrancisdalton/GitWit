@@ -2,7 +2,7 @@ from pathlib import Path
 import re
 from typing import Any, Dict
 from git import List, Repo
-from ..models.blame_line import BlameLine
+from models.blame_line import BlameLine
 
 class BlameFetchError(Exception):
     """Raised when git-blame for a file can’t be fetched or parsed."""

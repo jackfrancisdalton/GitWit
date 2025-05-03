@@ -1,6 +1,6 @@
 import typer
 
-from .commands import show_activity, who_is_the_expert, risky_commits, team_activity
+from commands import show_activity, who_is_the_expert, risky_commits, team_activity
 
 app = typer.Typer()
 

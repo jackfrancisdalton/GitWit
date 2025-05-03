@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="gitwit",
-    version="0.1.0",
+    version="0.1.1",
     description="A CLI for showing activity, experts, etc.. based on git data.",
     author="Jack Francis Dalton",
     author_email="jackfrancisdalton@gmail.com",
@@ -24,7 +24,7 @@ setup(
     # },
     entry_points={
         "console_scripts": [
-            "gitwit = src.cli:app",
+            "gitwit = cli.cli:app",
         ],
     },
     classifiers=[
