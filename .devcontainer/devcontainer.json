@@ -35,8 +35,10 @@
 			}
 		}
 	},
-	"postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt && bash .devcontainer/add-cli-alias-to-path.sh"
-
+	"postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt && bash .devcontainer/add-cli-alias-to-path.sh",
+	"containerEnv": {
+		"PYTHONPATH": "/workspaces/GitWit/src:${PYTHONPATH}"
+	},
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
