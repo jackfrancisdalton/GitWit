@@ -2,8 +2,8 @@ import pytest
 from datetime import datetime, timedelta
 from typer import Exit as TyperExit
 
-import src.commands.risky_commits as risk_commits
-from src.commands.risky_commits import _identify_risky_commits, RiskFactor
+import commands.risky_commits as risk_commits
+from commands.risky_commits import _identify_risky_commits
 
 
 class DummyCommit:

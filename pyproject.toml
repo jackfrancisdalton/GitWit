@@ -1,0 +1,40 @@
+# pyproject.toml
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gitwit"
+version = "0.1.1"
+description = "A CLI for showing activity, experts, etc.. based on git data."
+readme = "README.md"
+authors = [
+  { name = "Jack Francis Dalton", email = "jackfrancisdalton@gmail.com" }
+]
+requires-python = ">=3.7"
+dependencies = [
+  "typer[all]>=0.9.0",
+  "GitPython>=3.1.31",
+  "rich>=13.5.2",
+  "watchdog>=4.0.0",
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Framework :: Typer",
+]
+
+# console_scripts entry point
+[project.scripts]
+gitwit = "cli.cli:app"
+
+# dev-requirements (extras)
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.3.1",
+  "pytest-mock>=3.10.0",
+]
+
+# (Optional) if you want pytest to auto-add src/ to PYTHONPATH:
+[tool.pytest.ini_options]
+pythonpath = ["src"]

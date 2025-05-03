@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 from datetime import datetime, timedelta, timezone
 from collections import Counter
 
-from src.commands.show_activity import (
+from commands.show_activity import (
     _compute_file_statistics,
     _compute_author_activity_statistics,
     FileStats,

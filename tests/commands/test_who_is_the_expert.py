@@ -2,8 +2,8 @@ import pytest
 from datetime import datetime
 from typer import Exit as TyperExit
 
-import src.commands.who_is_the_expert as file_expert
-from src.commands.who_is_the_expert import _compute_author_activity, _gather_blame_entries
+import commands.who_is_the_expert as file_expert
+from commands.who_is_the_expert import _compute_author_activity, _gather_blame_entries
 
 class DummyBlame:
     def __init__(self, author, author_time, summary, num_lines):
