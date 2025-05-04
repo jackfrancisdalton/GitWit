@@ -58,13 +58,12 @@ def _fetch_developer_activities(repo: Repo, since: datetime) -> List[DeveloperAc
                 review_time_avg=timedelta(),
                 new_files=0,
             )
-
+            
         dev_activity = developers[author]
-
         dev_activity.lines_added += stats.total["insertions"]
         dev_activity.lines_deleted += stats.total["deletions"]
         dev_activity.new_files += len(stats.files)
-        dev_activity.prs_merged += 1  # Simplified assumption: one commit == one PR TODO: implement actual PR fetching
+        # TODO: implement PRs merged and reviews done and their average time
 
     return list(developers.values())
 
