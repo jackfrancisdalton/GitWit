@@ -13,11 +13,9 @@ class DummyCommit:
         self.message = message
         self.stats = stats
 
-
 class DummyAuthor:
     def __init__(self, name):
         self.name = name
-
 
 class DummyStats:
     def __init__(self, insertions, deletions, files):
@@ -94,8 +92,8 @@ def test_fetch_developer_activities__valid_commits(repo_mock):
     )
 
     repo_mock([
-        simple_commit, 
-        commit_with_multiple_files, 
+        simple_commit,
+        commit_with_multiple_files,
     ])
     since = datetime.now() - timedelta(days=7)
     repo = team_activity.Repo(".")
@@ -111,14 +109,14 @@ def test_fetch_developer_activities__valid_commits(repo_mock):
     assert results[0].lines_deleted == 5
     assert results[0].prs_merged == 0
     assert results[0].reviews_done == 0
-    assert results[0].new_files == 1
+    assert results[0].files_touched == 1
 
     assert results[1].developer == "Dev2"
     assert results[1].lines_added == 20
     assert results[1].lines_deleted == 10
     assert results[1].prs_merged == 0
     assert results[1].reviews_done == 0
-    assert results[1].new_files == 3
+    assert results[1].files_touched == 3
 
 
 def test_fetch_developer_activities__valid_commits_from_same_author(repo_mock):
@@ -135,12 +133,12 @@ def test_fetch_developer_activities__valid_commits_from_same_author(repo_mock):
         author_name="Dev1",
         committed_date=datetime.now().timestamp(),
         message="Update file",
-        stats=DummyStats(20, 10, ["file8.py", "file2.py", "file3.py"])
+        stats=DummyStats(20, 10, ["file4.py", "file2.py", "file3.py"])
     )
 
     repo_mock([
-        simple_commit, 
-        commit_with_multiple_files, 
+        simple_commit,
+        commit_with_multiple_files
     ])
     since = datetime.now() - timedelta(days=7)
     repo = team_activity.Repo(".")
@@ -156,4 +154,57 @@ def test_fetch_developer_activities__valid_commits_from_same_author(repo_mock):
     assert results[0].lines_deleted == 5 + 10
     assert results[0].prs_merged == 0
     assert results[0].reviews_done == 0
-    assert results[0].new_files == 1 + 3
+    assert results[0].files_touched == 1 + 3
+
+
+def test_fetch_developer_activities__valid_commits_on_the_same_file(repo_mock):
+    # Arrange
+    simple_commit = DummyCommit(
+        hexsha="abc1234",
+        author_name="Dev1",
+        committed_date=datetime.now().timestamp(),
+        message="Initial commit",
+        stats=DummyStats(10, 5, ["file1.py"])
+    )
+    commit_on_the_same_file = DummyCommit(
+        hexsha="def5678",
+        author_name="Dev1",
+        committed_date=datetime.now().timestamp(),
+        message="Update file",
+        stats=DummyStats(20, 10, ["file1.py", "file2.py"])
+    )
+    commit_from_different_author_on_same_file = DummyCommit(
+        hexsha="def5678",
+        author_name="Dev2",
+        committed_date=datetime.now().timestamp(),
+        message="Update file",
+        stats=DummyStats(5, 7, ["file1.py"])
+    )
+
+    repo_mock([
+        simple_commit,
+        commit_on_the_same_file,
+        commit_from_different_author_on_same_file
+    ])
+    since = datetime.now() - timedelta(days=7)
+    repo = team_activity.Repo(".")
+
+    # Act
+    results = team_activity._fetch_developer_activities(repo, since)
+
+    # Assert
+    assert len(results) == 2
+
+    assert results[0].developer == "Dev1"
+    assert results[0].lines_added == 10 + 20
+    assert results[0].lines_deleted == 5 + 10
+    assert results[0].prs_merged == 0
+    assert results[0].reviews_done == 0
+    assert results[0].files_touched == 1 + 1
+
+    assert results[1].developer == "Dev2"
+    assert results[1].lines_added == 5
+    assert results[1].lines_deleted == 7
+    assert results[1].prs_merged == 0
+    assert results[1].reviews_done == 0
+    assert results[1].files_touched == 1

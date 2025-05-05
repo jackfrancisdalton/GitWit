@@ -14,7 +14,7 @@ class DeveloperActivity:
     lines_deleted: int
     reviews_done: int
     review_time_avg: timedelta
-    new_files: int
+    files_touched: int
 
 console = ConsoleSingleton.get_console()
 
@@ -26,7 +26,8 @@ def command(
     """
     Summarize developer activity for a given period.
     """
-    period_mapping = {"day": 1, "week": 7, "month": 30}
+    period_mapping = {"day": 1, "week": 7, "month": 30, "year": 365 }
+
     if period not in period_mapping:
         console.print(f"[red]Invalid period '{period}'. Choose 'day', 'week', or 'month'.[/red]")
         raise typer.Exit(1)
@@ -43,6 +44,7 @@ def command(
 
 def _fetch_developer_activities(repo: Repo, since: datetime) -> List[DeveloperActivity]:
     developers = {}
+    files_seen: dict[str, set[str]] = {}
 
     for commit in repo.iter_commits(since=since.isoformat()):
         author = commit.author.name
@@ -56,13 +58,19 @@ def _fetch_developer_activities(repo: Repo, since: datetime) -> List[DeveloperAc
                 lines_deleted=0,
                 reviews_done=0,
                 review_time_avg=timedelta(),
-                new_files=0,
+                files_touched=0,
             )
-            
+            files_seen[author] = set()
+
         dev_activity = developers[author]
         dev_activity.lines_added += stats.total["insertions"]
         dev_activity.lines_deleted += stats.total["deletions"]
-        dev_activity.new_files += len(stats.files)
+
+        for filename in stats.files:
+            if filename not in files_seen[author]:
+                files_seen[author].add(filename)
+                dev_activity.files_touched += 1
+
         # TODO: implement PRs merged and reviews done and their average time
 
     return list(developers.values())
@@ -77,7 +85,7 @@ def _generate_activity_table(developers: List[DeveloperActivity]) -> Table:
     table.add_column("Lines Deleted", justify="right", style="red")
     table.add_column("Reviews Done", justify="right", style="cyan")
     table.add_column("Review Time Avg", justify="right", style="yellow")
-    table.add_column("New Files", justify="right", style="green")
+    table.add_column("Files Touched", justify="right", style="green")
 
     for dev in developers:
         review_time = (
@@ -92,7 +100,7 @@ def _generate_activity_table(developers: List[DeveloperActivity]) -> Table:
             str(dev.lines_deleted),
             str(dev.reviews_done),
             review_time,
-            str(dev.new_files),
+            str(dev.files_touched),
         )
 
     return table
