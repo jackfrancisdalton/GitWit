@@ -4,6 +4,13 @@ from typing import List
 import typer
 from git import Repo
 from rich.table import Table
+from rich.progress import (
+    Progress,
+    TextColumn,
+    BarColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+)
 from utils.console_singleton import ConsoleSingleton
 
 @dataclass
@@ -34,58 +41,70 @@ def command(
 
     days_ago = datetime.now() - timedelta(days=period_mapping[period])
 
-    repo = Repo(".", search_parent_directories=True)
-
-    developer_activities = _fetch_developer_activities(repo, days_ago)
+    developer_activities = _fetch_developer_activities(days_ago)
     table = _generate_activity_table(developer_activities)
 
     console.print(table)
 
 
-def _fetch_developer_activities(repo: Repo, since: datetime) -> List[DeveloperActivity]:
-    developers = {}
-    files_seen: dict[str, set[str]] = {}
+def _fetch_developer_activities(since: datetime):
+    repo = Repo(".", search_parent_directories=True)
+    commits = list(repo.iter_commits(since=since.isoformat()))
+    total = len(commits)
 
-    for commit in repo.iter_commits(since=since.isoformat()):
-        author = commit.author.name
-        stats = commit.stats
+    activities = {}
+    files_seen = {}
 
-        if author not in developers:
-            developers[author] = DeveloperActivity(
-                developer=author,
-                prs_merged=0,
-                lines_added=0,
-                lines_deleted=0,
-                reviews_done=0,
-                review_time_avg=timedelta(),
-                files_touched=0,
-            )
-            files_seen[author] = set()
+    with Progress(
+        TextColumn("[bold blue]{task.description}"),
+        BarColumn(),
+        TextColumn("{task.completed}/{task.total}"),
+        TimeElapsedColumn(),
+        TimeRemainingColumn(),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Scanning commits", total=total)
 
-        dev_activity = developers[author]
-        dev_activity.lines_added += stats.total["insertions"]
-        dev_activity.lines_deleted += stats.total["deletions"]
+        for commit in commits:
+            author = commit.author.name
+            stats = commit.stats
 
-        for filename in stats.files:
-            if filename not in files_seen[author]:
-                files_seen[author].add(filename)
-                dev_activity.files_touched += 1
+            if author not in activities:
+                activities[author] = DeveloperActivity(
+                    developer=author,
+                    prs_merged=0,
+                    lines_added=0,
+                    lines_deleted=0,
+                    reviews_done=0,
+                    review_time_avg=timedelta(),
+                    files_touched=0,
+                )
+                files_seen[author] = set()
 
-        # TODO: implement PRs merged and reviews done and their average time
+            dev = activities[author]
+            dev.lines_added += stats.total["insertions"]
+            dev.lines_deleted += stats.total["deletions"]
 
-    return list(developers.values())
+            for fn in stats.files:
+                if fn not in files_seen[author]:
+                    files_seen[author].add(fn)
+                    dev.files_touched += 1
+
+            progress.advance(task)
+
+    return list(activities.values())
 
 
 def _generate_activity_table(developers: List[DeveloperActivity]) -> Table:
     table = Table(title="Developer Activity Summary")
 
     table.add_column("Developer", style="magenta")
-    table.add_column("PRs Merged", justify="right", style="cyan")
     table.add_column("Lines Added", justify="right", style="green")
     table.add_column("Lines Deleted", justify="right", style="red")
+    table.add_column("Files Touched", justify="right", style="yellow")
+    table.add_column("PRs Merged", justify="right", style="cyan")
     table.add_column("Reviews Done", justify="right", style="cyan")
-    table.add_column("Review Time Avg", justify="right", style="yellow")
-    table.add_column("Files Touched", justify="right", style="green")
+    table.add_column("Review Time Avg", justify="right", style="cyan")
 
     for dev in developers:
         review_time = (
@@ -95,12 +114,12 @@ def _generate_activity_table(developers: List[DeveloperActivity]) -> Table:
 
         table.add_row(
             dev.developer,
-            str(dev.prs_merged),
             str(dev.lines_added),
             str(dev.lines_deleted),
+            str(dev.files_touched),
+            str(dev.prs_merged),
             str(dev.reviews_done),
             review_time,
-            str(dev.files_touched),
         )
 
     return table
