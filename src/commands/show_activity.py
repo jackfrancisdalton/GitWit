@@ -10,6 +10,13 @@ from datetime import datetime, timedelta, timezone
 from utils.fetch_commits import fetch_commits_in_date_range
 from utils.date_utils import convert_to_datetime
 from utils.console_singleton import ConsoleSingleton
+from rich.progress import (
+    Progress,
+    TextColumn,
+    BarColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+)
 
 console = ConsoleSingleton.get_console()
 
@@ -79,18 +86,27 @@ def _compute_file_statistics(
     """
     stats_map: Dict[str, FileStats] = {}
 
-    for commit in commits:
-        for fname, details in commit.stats.files.items():
-            fname = str(fname)
-            fs = stats_map.get(fname)
-            
-            if fs is None:
-                fs = FileStats(file=fname)
-                stats_map[fname] = fs
+    with Progress(
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TimeElapsedColumn(),
+        TimeRemainingColumn(),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Processing commits...", total=len(commits))
+        for commit in commits:
+            for fname, details in commit.stats.files.items():
+                fname = str(fname)
+                fs = stats_map.get(fname)
+                
+                if fs is None:
+                    fs = FileStats(file=fname)
+                    stats_map[fname] = fs
 
-            fs.commits += 1
-            fs.lines += details.get("lines", 0)
-            fs.authors[commit.author.name] += 1
+                fs.commits += 1
+                fs.lines += details.get("lines", 0)
+                fs.authors[commit.author.name] += 1
+            progress.update(task, advance=1)
 
     # sort by total lines changed, descending, and trim to limit
     sorted_list = sorted(
