@@ -49,7 +49,7 @@ def test_fetch_developer_activities__no_commits(repo_mock):
     repo = team_activity.Repo(".")
 
     # Act
-    results = team_activity._fetch_developer_activities(repo, since)
+    results = team_activity._fetch_developer_activities(since)
 
     # Assert
     assert len(results) == 0
@@ -69,7 +69,7 @@ def test_fetch_developer_activities__commit_out_of_range(repo_mock):
     repo = team_activity.Repo(".")
 
     # Act
-    results = team_activity._fetch_developer_activities(repo, since)
+    results = team_activity._fetch_developer_activities(since)
 
     # Assert
     assert len(results) == 0
@@ -99,7 +99,7 @@ def test_fetch_developer_activities__valid_commits(repo_mock):
     repo = team_activity.Repo(".")
 
     # Act
-    results = team_activity._fetch_developer_activities(repo, since)
+    results = team_activity._fetch_developer_activities(since)
 
     # Assert
     assert len(results) == 2
@@ -144,7 +144,7 @@ def test_fetch_developer_activities__valid_commits_from_same_author(repo_mock):
     repo = team_activity.Repo(".")
 
     # Act
-    results = team_activity._fetch_developer_activities(repo, since)
+    results = team_activity._fetch_developer_activities(since)
 
     # Assert
     assert len(results) == 1
@@ -190,7 +190,7 @@ def test_fetch_developer_activities__valid_commits_on_the_same_file(repo_mock):
     repo = team_activity.Repo(".")
 
     # Act
-    results = team_activity._fetch_developer_activities(repo, since)
+    results = team_activity._fetch_developer_activities(since)
 
     # Assert
     assert len(results) == 2
