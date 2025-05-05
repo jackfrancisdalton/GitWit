@@ -5,7 +5,10 @@ from dataclasses import dataclass
 import typer
 from git import Repo
 from rich.table import Table
+from models.git_log_entry import GitLogEntry
 from utils.console_singleton import ConsoleSingleton
+from utils.fetch_git_log_entries import fetch_git_log_entries
+from utils.fetch_tracked_git_file_paths import fetch_tracked_git_file_paths
 
 console = ConsoleSingleton.get_console()
 
@@ -14,14 +17,6 @@ class LatestFileExample:
     path: str
     created_at: datetime
     author: str
-
-@dataclass
-class GitLogBlock:
-    commit_hash: str
-    created_at_iso: str
-    author: str
-    files: List[str]
-
 
 def command(
     search_term: str = typer.Argument(
@@ -60,7 +55,7 @@ def _find_latest_examples(
     repo = Repo('.', search_parent_directories=True)
 
     # 1) Generate a list of all filees that match search and directory requiremensts and exist in git history
-    matched_files = _get_file_paths_matching_conditions_from_git_history(repo, search_term, directories)
+    matched_files = fetch_tracked_git_file_paths(repo, search_term, directories)
 
     # 2) If no files match, fast return empty list
     if not matched_files:
@@ -74,29 +69,13 @@ def _find_latest_examples(
     return examples[:limit]
 
 
-def _get_file_paths_matching_conditions_from_git_history(repo: Repo, search_term: str, directories) -> List[str]:
-    all_files = repo.git.ls_files().splitlines()
-    matching_files = [f for f in all_files if search_term in os.path.basename(f)]
-
-    if directories:
-        dirs = [d.rstrip('/') + '/' for d in directories]
-        matching_files = [f for f in matching_files if any(f.startswith(d) for d in dirs)]
-
-    return matching_files
-
-
 def _hydrate_examples_and_filter_based_on_git_data(
     repo: Repo,
     target_files: List[str],
     authors: Optional[List[str]]
 ) -> List[LatestFileExample]:
     # Fetch all git commits that have added files and parse into blocks
-    raw = repo.git.log(
-        '--diff-filter=A',
-        '--format=%H%x00%aI%x00%an',
-        '--name-only'
-    )
-    git_log_blocks = _convert_git_log_to_blocks(raw)
+    git_log_blocks = fetch_git_log_entries(repo)
 
     latest_examples_of: List[LatestFileExample] = []
     seen_files: set[str] = set()
@@ -130,48 +109,6 @@ def _hydrate_examples_and_filter_based_on_git_data(
             break
 
     return latest_examples_of
-
-
-# TODO: move function to utils
-def _convert_git_log_to_blocks(raw: str) -> List[GitLogBlock]:
-    blocks: List[GitLogBlock] = []
-
-    current_hash: Optional[str] = None
-    current_iso_date: Optional[str] = None
-    current_author: Optional[str] = None
-    current_files: List[str] = []
-
-    for line in raw.splitlines():
-        if '\x00' in line:
-            # flush the previous block if we had one
-            if current_hash is not None:
-                blocks.append(GitLogBlock(
-                    commit_hash=current_hash,
-                    created_at_iso=current_iso_date,
-                    author=current_author,
-                    files=current_files
-                ))
-            # parse new header
-            commit_hash, iso_date, author = line.split('\x00')
-            current_hash = commit_hash
-            current_iso_date = iso_date
-            current_author = author
-            current_files = []
-        else:
-            path = line.strip()
-            if path:
-                current_files.append(path)
-
-    # flush the final block
-    if current_hash is not None:
-        blocks.append(GitLogBlock(
-            commit_hash=current_hash,
-            created_at_iso=current_iso_date, 
-            author=current_author,
-            files=current_files
-        ))
-
-    return blocks
 
 
 def _generate_table(search_term: str, examples: List[LatestFileExample]) -> Table:
