@@ -4,12 +4,13 @@ from datetime import datetime, timezone, timedelta
 from dataclasses import dataclass
 from git import Repo
 from rich.table import Table
-from models.git_log_entry import GitLogEntry
 from utils.console_singleton import ConsoleSingleton
 from utils.fetch_git_log_entries import fetch_git_log_entries
 
 console = ConsoleSingleton.get_console()
 
+# Assign a fixed UTC time at import time to avoid issues where microseconds during run time result in filtering errors
+FIXED_NOW_UTC = datetime.now(timezone.utc)
 
 @dataclass
 class HotZone:
@@ -73,34 +74,57 @@ def _generate_entries(
     authors: Optional[List[str]]
 ) -> List[GitLogFileEntry]:
     repo = Repo('.', search_parent_directories=True)
-    raw_entries: List[GitLogEntry] = fetch_git_log_entries(repo)
+    cutoff = FIXED_NOW_UTC - timedelta(days=days)
 
-    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
-    entries: List[GitLogFileEntry] = []
+    # Fetch git log entries
+    git_log_entries = fetch_git_log_entries(repo)
 
-    for entry in raw_entries:
-        date = datetime.fromisoformat(entry.created_at_iso.rstrip('Z'))
-        date = date.astimezone(timezone.utc)
+    # normalize directory filters
+    dirs = [d.rstrip("/") for d in directories] if directories else None
 
-        if date < cutoff:
+    def is_relevant_path(path: str) -> bool:
+        if dirs is None:
+            return True
+        
+        return any(path == d or path.startswith(f"{d}/") for d in dirs)
+
+    def is_relevant_author(author: str) -> bool:
+        if not authors:
+            return True
+        
+        return any(a.lower() in author.lower() for a in authors)
+    
+    result: List[GitLogFileEntry] = []
+
+    for log_entry in git_log_entries:
+        log_entry_date = datetime.fromisoformat(log_entry.created_at_iso.rstrip("Z")).astimezone(timezone.utc)
+
+        # Date Filter
+        if log_entry_date < cutoff:
             continue
-        if authors and not any(a.lower() in entry.author.lower() for a in authors):
+
+        # Author Filter
+        if authors and not is_relevant_author(log_entry.author):
             continue
 
-        for path in entry.files:
-            if directories:
-                normalized_dirs = [d.strip("/") for d in directories]
-                if not any(path == nd or path.startswith(f"{nd}/") for nd in normalized_dirs):
-                    continue
+        # Path Filter
+        matches = [p for p in log_entry.files if is_relevant_path(p)]
+        if not matches:
+            continue
 
-            entries.append(GitLogFileEntry(
-                commit_hash=entry.commit_hash,
-                path=path,
-                author=entry.author,
-                date=date
-            ))
+        # TODO: review if this predicate is required
+        if authors:
+            # single entry per commit
+            result.append(GitLogFileEntry(log_entry.commit_hash, matches[0], log_entry.author, log_entry_date))
+        else:
+            # one entry per file
+            result.extend(
+                GitLogFileEntry(log_entry.commit_hash, p, log_entry.author, log_entry_date)
+                for p in matches
+            )
 
-    return entries
+    return result
+
 
 def _generate_file_tree(entries: List[GitLogFileEntry]) -> Node:
     root = Node("")
@@ -184,9 +208,8 @@ def _generate_table(zones: List[HotZone], days: int) -> Table:
     table.add_column("Contributors", justify="right", style="magenta")
     table.add_column("Last Change", style="yellow")
 
-    now = datetime.now(timezone.utc)
     for z in zones:
-        delta = now - z.last_change
+        delta = FIXED_NOW_UTC - z.last_change
         if delta < timedelta(hours=1):
             last = f"{int(delta.total_seconds() // 60)} min ago"
         elif delta < timedelta(days=1):
