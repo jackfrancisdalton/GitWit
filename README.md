@@ -26,3 +26,11 @@ It offers the following commands:
 
 
 ## Future Development
+
+
+# TODO: 
+- clean up arguments to be standardised (likely move to a days model instead of a from-to model)
+- clean up option vs argument approach for commands to simplify UX
+- clean up test coverage/names
+- add loading bars to all commands
+- add gitwork flow unit testing
