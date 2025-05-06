@@ -52,6 +52,7 @@ def repo_mock(monkeypatch):
     (501, 0, 2)
 ])
 def test_lines_changed_threshold(repo_mock, insertions, deletions, expected_score):
+    # Arrange
     commit = DummyCommit(
         hexsha="abc1234",
         author_name="Dev",
@@ -62,7 +63,11 @@ def test_lines_changed_threshold(repo_mock, insertions, deletions, expected_scor
     repo_mock([commit])
     since = datetime.now() - timedelta(days=7)
     repo = risk_commits.Repo(".")
+
+    # Act
     results = _identify_risky_commits(repo, since)
+
+    # Assert
     if expected_score == 0:
         assert len(results) == 0
     else:
@@ -77,6 +82,7 @@ def test_lines_changed_threshold(repo_mock, insertions, deletions, expected_scor
     (11, 2)
 ])
 def test_files_changed_threshold(repo_mock, files_changed, expected_score):
+    # Arrange
     files = [f"file_{i}.py" for i in range(files_changed)]
     commit = DummyCommit(
         hexsha="def5678",
@@ -85,10 +91,15 @@ def test_files_changed_threshold(repo_mock, files_changed, expected_score):
         message="Regular update",
         stats=DummyStats(10, 5, files)
     )
+
     repo_mock([commit])
     since = datetime.now() - timedelta(days=7)
     repo = risk_commits.Repo(".")
+    
+    # Act
     results = _identify_risky_commits(repo, since)
+
+    # Assert
     if expected_score == 0:
         assert len(results) == 0
     else:
@@ -102,6 +113,7 @@ def test_files_changed_threshold(repo_mock, files_changed, expected_score):
     ("Regular update", 0, None)
 ])
 def test_keyword_in_message(repo_mock, message, expected_score, keyword):
+    # Arrange
     commit = DummyCommit(
         hexsha="ghi9012",
         author_name="Dev",
@@ -109,10 +121,15 @@ def test_keyword_in_message(repo_mock, message, expected_score, keyword):
         message=message,
         stats=DummyStats(10, 5, ["app.py"])
     )
+
     repo_mock([commit])
     since = datetime.now() - timedelta(days=7)
     repo = risk_commits.Repo(".")
+
+    # Act
     results = _identify_risky_commits(repo, since)
+
+    # Assert
     if expected_score == 0:
         assert len(results) == 0
     else:
@@ -126,9 +143,14 @@ def test_command_invalid_period():
 
 
 def test_command_no_risky_commits(repo_mock, capsys):
+    # Arrange
     repo_mock([])
     risk_commits.command("week")
+
+    # Act
     captured = capsys.readouterr()
+
+    # Assert
     assert "No risky commits found" in captured.out
 
 

@@ -93,24 +93,33 @@ def test_command_dir_success(tmp_dir, monkeypatch, capsys):
 
 # --- Tests for helper functions ---
 
-def test_gather_blame_entries_file(tmp_file, monkeypatch):
+def test_gather_blame_entries__file(tmp_file, monkeypatch):
+    # Arrange
     bm = DummyBlame("A", 123, "msg", 2)
+    
     def fake(repo, path):
         assert path == tmp_file
         return [bm]
+    
     monkeypatch.setattr(
         file_expert,
         "fetch_file_gitblame",
         fake
     )
     repo = file_expert.Repo(".", search_parent_directories=True)
+
+    # Act
     entries = _gather_blame_entries(repo, tmp_file)
+
+    # Assert
     assert entries == [bm]
 
 
-def test_gather_blame_entries_dir(tmp_dir, monkeypatch):
+def test_gather_blame_entries__dir(tmp_dir, monkeypatch):
+    # Arrange
     b1 = DummyBlame("X", 10, "m1", 1)
     b2 = DummyBlame("Y", 20, "m2", 2)
+
     def fake(repo, path):
         if path.name == "f1.py":
             return [b1]
@@ -124,21 +133,31 @@ def test_gather_blame_entries_dir(tmp_dir, monkeypatch):
         fake
     )
     repo = file_expert.Repo(".", search_parent_directories=True)
+
+    # Act
     entries = _gather_blame_entries(repo, tmp_dir)
 
+    # Assert
+    assert len(entries) == 2
     assert b1 in entries
     assert b2 in entries
 
 
-def test_compute_author_activity_empty():
+def test_compute_author_activity__empty():
     assert _compute_author_activity([]) == []
 
 
-def test_compute_author_activity_aggregation():
+def test_compute_author_activity__aggregation():
+    # Arrange
     a1 = DummyBlame("Alice", 100, "start", 2)
     a2 = DummyBlame("Alice", 150, "later", 3)
     b = DummyBlame("Bob", 120, "fix", 1)
+
+    # Act
     result = _compute_author_activity([a1, a2, b])
+
+    # Assert
+    assert len(result) == 2
     data = {d.author: d for d in result}
 
     alice = data["Alice"]

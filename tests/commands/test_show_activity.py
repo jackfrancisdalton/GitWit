@@ -42,9 +42,13 @@ def commit_data():
     ],
 )
 def test_compute_file_statistics_cases(commit_data, commit_keys, expected_commit_count, expected_lines):
+    # Arrange
     mock_commits = [commit_data[key] for key in commit_keys]
+
+    # Act
     stats_list = _compute_file_statistics(mock_commits)
     
+    # Assert
     # List of FileStats
     assert isinstance(stats_list, list)
     assert all(isinstance(fs, FileStats) for fs in stats_list)
@@ -66,9 +70,14 @@ def test_compute_file_statistics_cases(commit_data, commit_keys, expected_commit
     ],
 )
 def test_compute_author_activity_statistics_cases(commit_data, commit_keys, expected_commit_count, expected_counter):
+    # Arrange
     mock_commits = [commit_data[key] for key in commit_keys]
+
+    # Act
     stats = _compute_author_activity_statistics(mock_commits)
     
+    # Assert
+
     # Return type
     assert isinstance(stats, AuthorActivityStats)
     
