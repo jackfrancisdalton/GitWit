@@ -9,7 +9,7 @@ app.command(name="sa")(show_activity.command)
 app.command(name="wte")(who_is_the_expert.command)
 app.command(name="rc")(risky_commits.command)
 app.command(name="leo")(latest_examples_of.command)
-app.command(name="rhz")(repo_hot_zones.command)
+app.command(name="hz")(repo_hot_zones.command)
 
 if __name__ == "__main__":
     app()

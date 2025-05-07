@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List
 import typer
-from git import Repo, Commit
+from git import Commit
 from rich.table import Table
 from utils.console_singleton import ConsoleSingleton
 from utils.date_utils import convert_to_datetime
