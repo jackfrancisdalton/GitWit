@@ -17,20 +17,94 @@ GitWit exlusivly uses project directories, files and git history to generate its
 
 It offers the following commands:
 
-| Command | CLI name | Arguments | Summary |
-| ------- | -------- | ----------| --------|
-|Who is the expert| wte | `--path` `--num-experts` | Provides an output for a target directory or file on who owns the most lines, who has touched it last, and what they did |
-| Show Activity | `sa` | `--since` `--until` | Provides an overview of activity during a given period such as the largest commits, the most active developers, etc...
-
-<!-- TODO all commands -->
 
 
-## Future Development
+# Commands
+
+
+<details>
+<summary>Team Activity</summary>
+Scans the git repo history for a given time period and calculates the activity of all of the authors during that period (lines added, deleted, etc...)
+
+>Use Case: You want to review the health of your dev team, and identify if anyone is struggeling hitting blocks, so you can quickly help them out
+
+### Command: `gitwit ta`
+
+- `--since`: the start date of the scan data (in `YYY-MM-DD` format) 
+- `--until`: the end date of the scan data (in `YYY-MM-DD` format) 
+</details>
+
+<details>
+<summary>Show Activity</summary>
+Scans the git repo history for a given time period and calculates the most active files and an overview of the number of commits, contributors
+
+>Use Case: you recently noticed a change in behaviour in your app and want to see where work has recently been done to identify what changed
+
+### Command: `gitwit sa`
+
+- `--since`: the start date of the scan data (in `YYY-MM-DD` format) 
+- `--until`: the end date of the scan data (in `YYY-MM-DD` format) 
+</details>
+
+
+<details>
+<summary>Who is the expert?</summary>
+Scans the git blame data in a file or an entire directory you specify, and determines a ranking of code oweners in that region, as well as highlighting the last commit they did in that region.
+
+>Use Case: You need to find a domain expert for a region of the code you're investigating
+
+### Command: `gitwit wte`
+
+- `--path`: the path or file you want to scan
+- `--num-results`: number of author results to display
+</details>
+
+
+<details>
+<summary>Risky Commits</summary>
+Scans the git repo history for content considered risky, such as commits with many file changes, many line changes, or commit messages with content like "refactor" or "fix"
+
+>Use Case: you're about to deploy your app but want to check for any risky commits you might be deploying
+
+### Command: `gitwit rc`
+
+- `--since`: the start date of the scan data (in `YYY-MM-DD` format) 
+- `--until`: the end date of the scan data (in `YYY-MM-DD` format) 
+</details>
+
+
+<details>
+<summary>Latest Example Of<summary>
+Scans git repo to identify the latest example of a given file for example "controller.py".
+
+>Use Case: you're adding a certain type of file for the first time and want to identify the latest implementation standards, and docs are out of date
+
+### Command: `gitwit leo`
+
+- `search-term`: the file string you want to match agains (ie `.py`) 
+- `--dirs`: the directories you want to scan for examples of the search term
+- `--authors`: filters commits to fuzzy match the author you want an example from
+- `--limit`: limits the number of example files returned
+</details>
+
+
+<details>
+<summary>Hot Zones<summary>
+Scans git repo for the hotest zones of activity where hotness is the most commits impacting that directory in the period.
+
+>Use Case: You want to contribute code to a directory but are unsure if it's an active area of development or fairly untouched in recent times
+
+### Command: `gitwit hz`
+
+- `--since`: the start date of the scan data (in `YYY-MM-DD` format) 
+- `--until`: the end date of the scan data (in `YYY-MM-DD` format) 
+- `--dirs`: directories to recursively scan for hotzones
+- '--author': filter the scan by commits by a defined author
+- `--limit`: limits the number of example files returned
+</details>
 
 
 # TODO: 
-- clean up arguments to be standardised (likely move to a days model instead of a from-to model)
-- clean up option vs argument approach for commands to simplify UX
 - clean up test coverage/names
 - add loading bars to all commands
 - add gitwork flow unit testing
