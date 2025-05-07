@@ -19,7 +19,7 @@ class HotZone:
 
 
 @dataclass
-class CommitData:
+class FileCommitEntry:
     commit_hash: str
     path: str
     author: str
@@ -52,7 +52,7 @@ def command(
         console.print("[red]Invalid date format. Use YYYY-MM-DD.[/red]")
         raise typer.Exit(1)
 
-    entries = _generate_commit_data(since_datetime, until_datetime, directories, authors)
+    entries = _collect_file_commit_entries(since_datetime, until_datetime, directories, authors)
 
     if not entries:
         return []
@@ -69,13 +69,12 @@ def command(
     else:
         console.print(f"[yellow]No activity between {since} and {until}.[/yellow]")
 
-# TODO: In theory we don't need this now and can run this all using the underlying Commit model, refactor in future
-def _generate_commit_data(
+def _collect_file_commit_entries(
     since: datetime,
     until: datetime,
     directories: Optional[List[str]],
     authors: Optional[List[str]]
-) -> List[CommitData]:
+) -> List[FileCommitEntry]:
     filtered = get_filtered_commits(
         since=since,
         until=until,
@@ -83,11 +82,11 @@ def _generate_commit_data(
         authors=authors,
     )
 
-    entries: List[CommitData] = []
+    entries: List[FileCommitEntry] = []
 
     for commit in filtered:
         for path in commit.stats.files:
-            entries.append(CommitData(
+            entries.append(FileCommitEntry(
                 commit.hexsha,
                 path,
                 commit.author.name,
@@ -97,7 +96,7 @@ def _generate_commit_data(
     return entries
 
 
-def _generate_file_tree(entries: List[CommitData]) -> Node:
+def _generate_file_tree(entries: List[FileCommitEntry]) -> Node:
     root = Node("")
 
     def add_entry(sha: str, path: str, author: str, date: datetime):

@@ -3,8 +3,8 @@ from datetime import datetime, timezone, timedelta
 
 import commands.repo_hot_zones as hz
 from commands.repo_hot_zones import (
-    CommitData,
-    _generate_commit_data,
+    FileCommitEntry,
+    _collect_file_commit_entries,
     _generate_file_tree,
     _compress_node_tree,
     _calculate_hot_zones,
@@ -38,7 +38,7 @@ def make_iso(days_delta: int, hours: int = 0):
 def test_generate_entries__empty():
     since = FIXED_NOW - timedelta(days=5)
     until = FIXED_NOW
-    entries = _generate_commit_data(since=since, until=until, directories=None, authors=None)
+    entries = _collect_file_commit_entries(since=since, until=until, directories=None, authors=None)
 
     assert entries == []
 
@@ -59,10 +59,10 @@ def test_file_tree__empty():
 def test_file_tree__basic_and_hot_zones():
     # Arrange
     entries = [
-        CommitData("h1", "dir/a.txt", "A", FIXED_NOW),
-        CommitData("h2", "dir/b.txt","B", FIXED_NOW),
-        CommitData("h3", "dir/a.txt","B", FIXED_NOW),
-        CommitData("h1", "test/test_a.txt", "A", FIXED_NOW),
+        FileCommitEntry("h1", "dir/a.txt", "A", FIXED_NOW),
+        FileCommitEntry("h2", "dir/b.txt","B", FIXED_NOW),
+        FileCommitEntry("h3", "dir/a.txt","B", FIXED_NOW),
+        FileCommitEntry("h1", "test/test_a.txt", "A", FIXED_NOW),
     ]
 
     # Act
@@ -87,8 +87,8 @@ def test_file_tree__basic_and_hot_zones():
 def test_compress__chain_and_preserve_direct_commit():
     # Arrange 
     entries = [
-        CommitData("h1", "a/b/file",  "X", FIXED_NOW),
-        CommitData("h2", "a/b/c/file2","Y", FIXED_NOW),
+        FileCommitEntry("h1", "a/b/file",  "X", FIXED_NOW),
+        FileCommitEntry("h2", "a/b/c/file2","Y", FIXED_NOW),
     ]
 
     # Act 
