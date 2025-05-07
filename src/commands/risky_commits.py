@@ -6,6 +6,7 @@ from git import Repo, Commit
 from rich.table import Table
 from utils.console_singleton import ConsoleSingleton
 from utils.date_utils import convert_to_datetime
+from utils.repo_helpers import get_filtered_commits
 
 
 @dataclass
@@ -39,8 +40,7 @@ def command(
         console.print(f"[red]Invalid date format provided. Use 'YYYY-MM-DD'.[/red]")
         raise typer.Exit(1)
 
-    repo = Repo(".", search_parent_directories=True)
-    risky_commits = _identify_risky_commits(repo, since_date, until_date)
+    risky_commits = _identify_risky_commits(since_date, until_date)
 
     if not risky_commits:
         console.print("[green]No risky commits found for this period.[/green]")
@@ -50,17 +50,15 @@ def command(
     console.print(table)
 
 
-def _identify_risky_commits(repo: Repo, since: datetime, until: datetime) -> List[RiskyCommit]:
-    commits_in_risk_period = list(
-        repo.iter_commits(
-            since=since.isoformat(), 
-            until=until.isoformat()
-        )
+def _identify_risky_commits(since: datetime, until: datetime) -> List[RiskyCommit]:
+    all_commits = get_filtered_commits(
+        since=since,
+        until=until,
     )
 
     risky_commits = []
 
-    for commit in commits_in_risk_period:
+    for commit in all_commits:
         risk_score = 0
         risk_factors = []
 

@@ -2,6 +2,7 @@ import pytest
 from datetime import datetime, timedelta
 
 import commands.risky_commits as risk_commits
+import utils.repo_helpers as repo_helpers
 from commands.risky_commits import _identify_risky_commits
 
 FIXED_NOW = datetime(2023, 1, 1, 12, 0, 0)
@@ -43,7 +44,7 @@ def repo_mock(monkeypatch):
             return iter(filtered_commits)
 
     def mock_repo(commits):
-        monkeypatch.setattr(risk_commits, "Repo", lambda *_args, **_kwargs: RepoMock(commits))
+        monkeypatch.setattr(repo_helpers, "Repo", lambda *_args, **_kwargs: RepoMock(commits))
 
     return mock_repo
 
@@ -66,10 +67,8 @@ def test_lines_changed_threshold(repo_mock, insertions, deletions, expected_scor
     since = FIXED_NOW - timedelta(days=7)
     until = FIXED_NOW
 
-    repo = risk_commits.Repo(".")
-
     # Act
-    results = _identify_risky_commits(repo, since, until)
+    results = _identify_risky_commits(since, until)
 
     # Assert
     if expected_score == 0:
@@ -99,10 +98,9 @@ def test_files_changed_threshold(repo_mock, files_changed, expected_score):
     repo_mock([commit])
     since = FIXED_NOW - timedelta(days=7)
     until = FIXED_NOW
-    repo = risk_commits.Repo(".")
     
     # Act
-    results = _identify_risky_commits(repo, since, until)
+    results = _identify_risky_commits(since, until)
 
     # Assert
     if expected_score == 0:
@@ -130,10 +128,9 @@ def test_keyword_in_message(repo_mock, message, expected_score, keyword):
     repo_mock([commit])
     since = FIXED_NOW - timedelta(days=7)
     until = FIXED_NOW
-    repo = risk_commits.Repo(".")
 
     # Act
-    results = _identify_risky_commits(repo, since, until)
+    results = _identify_risky_commits(since, until)
 
     # Assert
     if expected_score == 0:

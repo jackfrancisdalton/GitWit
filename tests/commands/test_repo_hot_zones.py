@@ -3,8 +3,8 @@ from datetime import datetime, timezone, timedelta
 
 import commands.repo_hot_zones as hz
 from commands.repo_hot_zones import (
-    GitLogFileEntry,
-    _generate_entries,
+    CommitData,
+    _generate_commit_data,
     _generate_file_tree,
     _compress_node_tree,
     _calculate_hot_zones,
@@ -25,7 +25,7 @@ class DummyEntry(GitLogEntry):
 @pytest.fixture(autouse=True)
 def patch_fetch(monkeypatch):
     """Ensure no real git calls."""
-    monkeypatch.setattr(hz, "fetch_git_log_entries", lambda repo: [])
+    monkeypatch.setattr(hz, "get_filtered_commits", lambda since, until, directories, authors: [])
 
 
 def make_iso(days_delta: int, hours: int = 0):
@@ -38,123 +38,9 @@ def make_iso(days_delta: int, hours: int = 0):
 def test_generate_entries__empty():
     since = FIXED_NOW - timedelta(days=5)
     until = FIXED_NOW
-    entries = _generate_entries(since=since, until=until, directories=None, authors=None)
+    entries = _generate_commit_data(since=since, until=until, directories=None, authors=None)
+
     assert entries == []
-
-
-def test_generate_entries__no_filters(monkeypatch):
-    # Arrange
-    raw = [
-        DummyEntry("h1", make_iso(1), "Alice", ["a.py", "path/c.py"]),
-        DummyEntry("h2", make_iso(4), "Bob",   ["d.py"])
-    ]
-    monkeypatch.setattr(hz, "fetch_git_log_entries", lambda repo: raw)
-
-    # Act
-    since = FIXED_NOW - timedelta(days=7)
-    until = FIXED_NOW
-    entries = _generate_entries(since=since, until=until, directories=None, authors=None)
-
-    # Assert
-    assert len(entries) == 3
-    paths = [e.path for e in entries]
-    assert paths == ["a.py", "path/c.py", "d.py"]
-
-
-def test_generate_entries__on_cutoff_boundary(monkeypatch):
-    # Arrange
-    raw = [
-        DummyEntry("h1", make_iso(7, 1), "A", ["x.py"])
-    ]
-    monkeypatch.setattr(hz, "fetch_git_log_entries", lambda repo: raw)
-
-    # Act
-    since = FIXED_NOW - timedelta(days=7)
-    until = FIXED_NOW
-    entries = _generate_entries(since=since, until=until, directories=None, authors=None)
-
-    # Assert
-    assert len(entries) == 1
-    assert entries[0].path == "x.py"
-
-
-def test_generate_entries__older_than_cutoff_dropped(monkeypatch):
-    # Arrange
-    raw = [
-        DummyEntry("h1", make_iso(8), "A", ["y.py"])
-    ]
-    monkeypatch.setattr(hz, "fetch_git_log_entries", lambda repo: raw)
-
-    # Act
-    since = FIXED_NOW - timedelta(days=7)
-    until = FIXED_NOW
-    entries = _generate_entries(since=since, until=until, directories=None, authors=None)
-
-    # Assert
-    assert entries == []
-
-
-@pytest.mark.parametrize("author_filter, expected_count, expected_commit_shas", [
-    (["alice"], 2, ["h1", "h3"]),   # exact
-    (["li"],    2, ["h1", "h3"]),   # substring
-    (["BO"],    1, ["h2"]),         # case-insensitive
-    (["x"],     0, []),             # no match
-])
-def test_generate_entries__author_filter(monkeypatch, author_filter, expected_count, expected_commit_shas):
-    # Arrange
-    raw = [
-        DummyEntry("h1", make_iso(1), "Alice", ["a.py"]),
-        DummyEntry("h2", make_iso(1), "Bob",   ["b.py"]),
-        DummyEntry("h3", make_iso(1), "Alice", ["b.py", "c.py"]),
-    ]
-    monkeypatch.setattr(hz, "fetch_git_log_entries", lambda repo: raw)
-
-    # Act
-    since = FIXED_NOW - timedelta(days=2)
-    until = FIXED_NOW
-    entries = _generate_entries(since=since, until=until, directories=None, authors=author_filter)
-
-    # Assert
-    assert len(entries) == expected_count
-    commit_shas = [e.commit_hash for e in entries]
-    assert commit_shas == expected_commit_shas
-
-
-def test_generate_entries__directory_filter(monkeypatch):
-    # Arrange
-    raw = [
-        DummyEntry("h1", make_iso(1), "A", ["src/a.py", "lib/b.py", "src/sub/c.py"]),
-    ]
-    monkeypatch.setattr(hz, "fetch_git_log_entries", lambda repo: raw)
-
-    # Act
-    since = FIXED_NOW - timedelta(days=2)
-    until = FIXED_NOW
-    entries = _generate_entries(since=since, until=until, directories=["src"], authors=None)
-
-    # Assert
-    assert len(entries) == 2
-    paths = sorted(e.path for e in entries)
-    assert paths == ["src/a.py", "src/sub/c.py"]
-
-
-def test_generate_entries__multiple_files_same_commit(monkeypatch):
-    # Arrange
-    raw = [
-        DummyEntry("h1", make_iso(0), "Z", ["f1.py", "f2.py"]),
-    ]
-    monkeypatch.setattr(hz, "fetch_git_log_entries", lambda repo: raw)
-
-    # Act
-    since = FIXED_NOW - timedelta(days=1)
-    until = FIXED_NOW
-    entries = _generate_entries(since=since, until=until, directories=None, authors=None)
-
-    # Assert
-    assert {e.path for e in entries} == {"f1.py", "f2.py"}
-    dates = {e.date for e in entries}
-    assert len(dates) == 1
-
 
 # ===== _generate_file_tree + compression + calculate tests =====
 
@@ -173,10 +59,10 @@ def test_file_tree__empty():
 def test_file_tree__basic_and_hot_zones():
     # Arrange
     entries = [
-        GitLogFileEntry("h1", "dir/a.txt", "A", FIXED_NOW),
-        GitLogFileEntry("h2", "dir/b.txt","B", FIXED_NOW),
-        GitLogFileEntry("h3", "dir/a.txt","B", FIXED_NOW),
-        GitLogFileEntry("h1", "test/test_a.txt", "A", FIXED_NOW),
+        CommitData("h1", "dir/a.txt", "A", FIXED_NOW),
+        CommitData("h2", "dir/b.txt","B", FIXED_NOW),
+        CommitData("h3", "dir/a.txt","B", FIXED_NOW),
+        CommitData("h1", "test/test_a.txt", "A", FIXED_NOW),
     ]
 
     # Act
@@ -201,8 +87,8 @@ def test_file_tree__basic_and_hot_zones():
 def test_compress__chain_and_preserve_direct_commit():
     # Arrange 
     entries = [
-        GitLogFileEntry("h1", "a/b/file",  "X", FIXED_NOW),
-        GitLogFileEntry("h2", "a/b/c/file2","Y", FIXED_NOW),
+        CommitData("h1", "a/b/file",  "X", FIXED_NOW),
+        CommitData("h2", "a/b/c/file2","Y", FIXED_NOW),
     ]
 
     # Act 

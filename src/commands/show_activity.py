@@ -7,7 +7,7 @@ from rich.table import Table
 from collections import Counter
 import typer
 from datetime import datetime, timedelta, timezone
-from utils.fetch_commits import fetch_commits_in_date_range
+from utils.repo_helpers import fetch_commits_in_date_range, get_filtered_commits
 from utils.date_utils import convert_to_datetime
 from utils.console_singleton import ConsoleSingleton
 from rich.progress import (
@@ -47,11 +47,17 @@ def command(
         help="End date in YYYY-MM-DD",
     ),
 ):
-    """Main command to show detailed Git activity report."""
+    try:
+        since_date = convert_to_datetime(since).replace(tzinfo=timezone.utc)
+        until_date = convert_to_datetime(until).replace(tzinfo=timezone.utc)
+    except ValueError:
+        console.print("[red]Invalid date format. Use YYYY-MM-DD.[/red]")
+        raise typer.Exit(1)
 
-    since_date = convert_to_datetime(since).replace(tzinfo=timezone.utc)
-    until_date = convert_to_datetime(until).replace(tzinfo=timezone.utc)
-    commits = fetch_commits_in_date_range(since_date, until_date)
+    commits = list(get_filtered_commits(
+        since=since_date,
+        until=until_date,
+    ))
 
     if not commits:
         console.print("[yellow]No commits found in this date range.[/yellow]")

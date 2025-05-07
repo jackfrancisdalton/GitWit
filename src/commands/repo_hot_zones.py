@@ -2,12 +2,11 @@ import typer
 from typing import List, Optional
 from datetime import datetime, timezone
 from dataclasses import dataclass
-from git import Repo
 from rich.table import Table
 from utils.console_singleton import ConsoleSingleton
 from utils.date_utils import convert_to_datetime
-from utils.fetch_git_log_entries import fetch_git_log_entries
 from utils.human_readable_helper import humanise_timedelta
+from utils.repo_helpers import get_filtered_commits
 
 console = ConsoleSingleton.get_console()
 
@@ -20,7 +19,7 @@ class HotZone:
 
 
 @dataclass
-class GitLogFileEntry:
+class CommitData:
     commit_hash: str
     path: str
     author: str
@@ -53,7 +52,7 @@ def command(
         console.print("[red]Invalid date format. Use YYYY-MM-DD.[/red]")
         raise typer.Exit(1)
 
-    entries = _generate_entries(since_datetime, until_datetime, directories, authors)
+    entries = _generate_commit_data(since_datetime, until_datetime, directories, authors)
 
     if not entries:
         return []
@@ -70,65 +69,35 @@ def command(
     else:
         console.print(f"[yellow]No activity between {since} and {until}.[/yellow]")
 
-# TODO: consider making this a re-usable function
-def _generate_entries(
+# TODO: In theory we don't need this now and can run this all using the underlying Commit model, refactor in future
+def _generate_commit_data(
     since: datetime,
     until: datetime,
     directories: Optional[List[str]],
     authors: Optional[List[str]]
-) -> List[GitLogFileEntry]:
-    repo = Repo('.', search_parent_directories=True)
+) -> List[CommitData]:
+    filtered = get_filtered_commits(
+        since=since,
+        until=until,
+        directories=directories,
+        authors=authors,
+    )
 
-    git_log_entries = fetch_git_log_entries(repo)
+    entries: List[CommitData] = []
 
-    # remove any trailing directory slashes
-    dirs = [d.rstrip("/") for d in directories] if directories else None
+    for commit in filtered:
+        for path in commit.stats.files:
+            entries.append(CommitData(
+                commit.hexsha,
+                path,
+                commit.author.name,
+                commit.committed_datetime.astimezone(timezone.utc),
+            ))
 
-    def is_relevant_path(path: str) -> bool:
-        if dirs is None:
-            return True
-        
-        return any(path == d or path.startswith(f"{d}/") for d in dirs)
-
-    def is_relevant_author(author: str) -> bool:
-        if not authors:
-            return True
-        
-        return any(a.lower() in author.lower() for a in authors)
-    
-    result: List[GitLogFileEntry] = []
-
-    for log_entry in git_log_entries:
-        log_entry_date = convert_to_datetime(log_entry.created_at_iso)
-
-        # Date Filter
-        if log_entry_date < since or log_entry_date > until:
-            continue
-
-        # Author Filter
-        if authors and not is_relevant_author(log_entry.author):
-            continue
-
-        # Path Filter
-        matches = [p for p in log_entry.files if is_relevant_path(p)]
-        if not matches:
-            continue
-
-        # TODO: review if this predicate is required
-        if authors:
-            # single entry per commit
-            result.append(GitLogFileEntry(log_entry.commit_hash, matches[0], log_entry.author, log_entry_date))
-        else:
-            # one entry per file
-            result.extend(
-                GitLogFileEntry(log_entry.commit_hash, p, log_entry.author, log_entry_date)
-                for p in matches
-            )
-
-    return result
+    return entries
 
 
-def _generate_file_tree(entries: List[GitLogFileEntry]) -> Node:
+def _generate_file_tree(entries: List[CommitData]) -> Node:
     root = Node("")
 
     def add_entry(sha: str, path: str, author: str, date: datetime):

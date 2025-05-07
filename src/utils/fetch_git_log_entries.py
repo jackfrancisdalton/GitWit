@@ -4,6 +4,7 @@ from git import Repo
 from models.git_log_entry import GitLogEntry
 
 
+# TODO: might not be needed anymore
 def fetch_git_log_entries(repo: Repo) -> List[GitLogEntry]:
     raw = repo.git.log(
         '--diff-filter=A',
