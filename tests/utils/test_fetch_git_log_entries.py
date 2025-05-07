@@ -1,4 +1,4 @@
-from utils.fetch_git_log_entries import fetch_git_log_entries
+from utils.fetch_git_log_entries import fetch_git_log_entries_of_added_files
 
 class DummyRepo:
     """Mocks Repo for git.log() calls."""
@@ -22,7 +22,7 @@ def test_convert_git_log_to_log_blocks__single_file_and_multiple_file_commits():
     repo = DummyRepo(raw)
 
     # Act
-    log_blocks = fetch_git_log_entries(repo)
+    log_blocks = fetch_git_log_entries_of_added_files(repo)
 
     # Assert
     assert len(log_blocks) == 2
@@ -43,7 +43,7 @@ def test_convert_git_log_to_log_blocks__no_commits():
     repo = DummyRepo(raw)
 
     # Act
-    log_blocks = fetch_git_log_entries(repo)
+    log_blocks = fetch_git_log_entries_of_added_files(repo)
 
     # Assert
     assert len(log_blocks) == 0

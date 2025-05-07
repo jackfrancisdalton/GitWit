@@ -6,7 +6,7 @@ from git import Repo
 from rich.table import Table
 from utils.console_singleton import ConsoleSingleton
 from utils.date_utils import convert_to_datetime
-from utils.fetch_git_log_entries import fetch_git_log_entries
+from utils.fetch_git_log_entries import fetch_git_log_entries_of_added_files
 from utils.git_helpers import fetch_file_paths_tracked_by_git
 
 console = ConsoleSingleton.get_console()
@@ -61,7 +61,7 @@ def _hydrate_examples_and_filter_based_on_git_data(
     authors: Optional[List[str]]
 ) -> List[LatestFileExample]:
     # Fetch all git commits that have added files and parse into blocks
-    git_log_blocks = fetch_git_log_entries(repo)
+    git_log_blocks = fetch_git_log_entries_of_added_files(repo)
 
     latest_examples_of: List[LatestFileExample] = []
     seen_files: set[str] = set()
