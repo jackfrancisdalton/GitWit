@@ -1,11 +1,9 @@
-import os
 from typing import List, Optional
 from datetime import datetime
 from dataclasses import dataclass
 import typer
 from git import Repo
 from rich.table import Table
-from models.git_log_entry import GitLogEntry
 from utils.console_singleton import ConsoleSingleton
 from utils.fetch_git_log_entries import fetch_git_log_entries
 from utils.fetch_tracked_git_file_paths import fetch_tracked_git_file_paths
