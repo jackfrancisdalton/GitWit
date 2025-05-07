@@ -1,11 +1,11 @@
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Dict, List, Set
+from datetime import datetime
+from typing import List
 import typer
 from git import Repo, Commit
 from rich.table import Table
 from utils.console_singleton import ConsoleSingleton
+from utils.date_utils import convert_to_datetime
 
 
 @dataclass
@@ -29,17 +29,18 @@ FILES_CHANGED_THRESHOLD = 10
 
 
 def command(
-    period: str = typer.Option("week", help="Period to analyze: day, week, or month")
+    since: str = typer.Option(..., help="Start date in YYYY-MM-DD format"),
+    until: str = typer.Option(None, help="End date in YYYY-MM-DD format")
 ):
-    period_mapping = {"day": 1, "week": 7, "month": 30}
-    if period not in period_mapping:
-        console.print(f"[red]Invalid period '{period}'. Choose 'day', 'week', or 'month'.[/red]")
+    try:
+        since_date = convert_to_datetime(since)
+        until_date = convert_to_datetime(until)
+    except ValueError:
+        console.print(f"[red]Invalid date format provided. Use 'YYYY-MM-DD'.[/red]")
         raise typer.Exit(1)
 
-    since = datetime.now() - timedelta(days=period_mapping[period])
     repo = Repo(".", search_parent_directories=True)
-
-    risky_commits = _identify_risky_commits(repo, since)
+    risky_commits = _identify_risky_commits(repo, since_date, until_date)
 
     if not risky_commits:
         console.print("[green]No risky commits found for this period.[/green]")
@@ -49,32 +50,13 @@ def command(
     console.print(table)
 
 
-def _generate_file_types_commited_by_author_dict(start_of_risk_assessment_period: datetime, repo: Repo) -> Dict[str, Set[str]]:
-    # Initialize a dictionary to store file type prefixes seen by each author
-    seen_prefixes_by_author: Dict[str, Set[str]] = {}
-
-    # Iterate over all commits in the repository up to the specified date
-    for old in repo.iter_commits(until=start_of_risk_assessment_period.isoformat()):
-        # Get the parent commit of the current commit, if it exists
-        parent = old.parents[0] if old.parents else None
-
-        # Iterate over the differences (diffs) between the current commit and its parent
-        for diff in old.diff(parent):
-            # Check if the diff represents a new file and has a valid file path
-            if diff.new_file and diff.b_path:
-                # Extract the file type (suffix) or the file name if no suffix exists
-                pref = Path(diff.b_path).suffix or Path(diff.b_path).name
-                # Add the file type prefix to the set of seen prefixes for the commit's author
-                seen_prefixes_by_author.setdefault(old.author.email, set()).add(pref)
-
-    # Return the dictionary containing file type prefixes seen by each author
-    return seen_prefixes_by_author
-
-
-def _identify_risky_commits(repo: Repo, since: datetime) -> List[RiskyCommit]:
-
-    # seen_prefixes_by_author = _generate_file_types_commited_by_author_dict(since, repo)
-    commits_in_risk_period = list(repo.iter_commits(since=since.isoformat()))
+def _identify_risky_commits(repo: Repo, since: datetime, until: datetime) -> List[RiskyCommit]:
+    commits_in_risk_period = list(
+        repo.iter_commits(
+            since=since.isoformat(), 
+            until=until.isoformat()
+        )
+    )
 
     risky_commits = []
 
@@ -89,7 +71,7 @@ def _identify_risky_commits(repo: Repo, since: datetime) -> List[RiskyCommit]:
         risk_score += _assess_lines_changed(total_lines_changed, risk_factors)
         risk_score += _assess_files_changed(files_changed, risk_factors)
         risk_score += _assess_keywords(str(commit.message), risk_factors)
-        # risk_score += _assess_first_time_files(commit, seen_prefixes_by_author, risk_factors)
+        # risk_score += _assess_first_time_files(commit, seen_prefixes_by_author, risk_factors) TODO: implement in the future
 
         if risk_score > 0:
             risky_commits.append(RiskyCommit(commit=commit, risk_score=risk_score, risk_factors=risk_factors))
@@ -128,36 +110,6 @@ def _assess_keywords(message: str, risk_factors: List[RiskFactor]) -> int:
             ))
             score += 3
     return score
-
-
-def _assess_first_time_files(
-    commit: Commit,
-    seen_prefixes_by_author: Dict[str, Set[str]],
-    risk_factors: List[RiskFactor]
-) -> int:
-    author_id = commit.author.email
-    seen = seen_prefixes_by_author.setdefault(author_id, set())
-
-    parent = commit.parents[0] if commit.parents else None
-    new_prefixes: Set[str] = set()
-
-    for diff in commit.diff(parent):
-        if not diff.new_file or not diff.b_path:
-            continue
-
-        pref = Path(diff.b_path).suffix or Path(diff.b_path).name
-
-        if pref not in seen:
-            new_prefixes.add(pref)
-            seen.add(pref)
-
-    for pref in new_prefixes:
-        risk_factors.append(RiskFactor(
-            description="First-time file type added",
-            details=f"File type '{pref}'"
-        ))
-
-    return len(new_prefixes)
 
 
 def _generate_risky_commits_table(commits: List[RiskyCommit]) -> Table:
