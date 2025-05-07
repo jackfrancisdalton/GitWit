@@ -5,12 +5,10 @@ from dataclasses import dataclass
 from git import Repo
 from rich.table import Table
 from utils.console_singleton import ConsoleSingleton
+from utils.date_utils import convert_to_datetime
 from utils.fetch_git_log_entries import fetch_git_log_entries
 
 console = ConsoleSingleton.get_console()
-
-# Assign a fixed UTC time at import time to avoid issues where microseconds during run time result in filtering errors
-FIXED_NOW_UTC = datetime.now(timezone.utc)
 
 @dataclass
 class HotZone:
@@ -41,16 +39,20 @@ class Node:
 
 
 def command(
-    days: int = typer.Option(7, "--days", "-d", help="Number of days to look back for commits"),
-    directories: Optional[List[str]] = typer.Option(
-        None, "--dir", "-d", help="Filter commits to these directory paths"
-    ),
-    authors: Optional[List[str]] = typer.Option(
-        None, "--author", "-a", help="Filter commits to these authors"
-    ),
+    since: str = typer.Option(..., "--since", "-s", help="Start date in YYYY-MM-DD format"),
+    until: str = typer.Option(..., "--until", "-u", help="End date in YYYY-MM-DD format(defaults to now)"),
+    directories: Optional[List[str]] = typer.Option(None, "--dir", "-d", help="Filter commits to these directory paths"),
+    authors: Optional[List[str]] = typer.Option(None, "--author", "-a", help="Filter commits to these authors"),
     limit: int = typer.Option(10, "--limit", "-n", help="Maximum number of hot zones to show"),
 ):
-    entries = _generate_entries(days, directories, authors)
+    try:
+        since_datetime = convert_to_datetime(since)
+        until_datetime = convert_to_datetime(until)
+    except ValueError:
+        console.print("[red]Invalid date format. Use YYYY-MM-DD.[/red]")
+        raise typer.Exit(1)
+
+    entries = _generate_entries(since_datetime, until_datetime, directories, authors)
 
     if not entries:
         return []
@@ -62,24 +64,23 @@ def command(
     if hot_zones:
         hot_zones.sort(key=lambda z: z.commits, reverse=True)
         hot_zones = hot_zones[:limit]
-        table = _generate_table(hot_zones, days)
+        table = _generate_table(hot_zones, since_datetime, until_datetime)
         console.print(table)
     else:
-        console.print(f"[yellow]No activity in the last {days} days.[/yellow]")
+        console.print(f"[yellow]No activity between {since} and {until}.[/yellow]")
 
 # TODO: consider making this a re-usable function
 def _generate_entries(
-    days: int,
+    since: datetime,
+    until: datetime,
     directories: Optional[List[str]],
     authors: Optional[List[str]]
 ) -> List[GitLogFileEntry]:
     repo = Repo('.', search_parent_directories=True)
-    cutoff = FIXED_NOW_UTC - timedelta(days=days)
 
-    # Fetch git log entries
     git_log_entries = fetch_git_log_entries(repo)
 
-    # normalize directory filters
+    # remove any trailing directory slashes
     dirs = [d.rstrip("/") for d in directories] if directories else None
 
     def is_relevant_path(path: str) -> bool:
@@ -100,7 +101,7 @@ def _generate_entries(
         log_entry_date = datetime.fromisoformat(log_entry.created_at_iso.rstrip("Z")).astimezone(timezone.utc)
 
         # Date Filter
-        if log_entry_date < cutoff:
+        if log_entry_date < since or log_entry_date > until:
             continue
 
         # Author Filter
@@ -201,15 +202,15 @@ def _calculate_hot_zones(root: Node) -> List[HotZone]:
     return zones
 
 
-def _generate_table(zones: List[HotZone], days: int) -> Table:
-    table = Table(title=f"Hot Zones (last {days} days)")
+def _generate_table(zones: List[HotZone], since: datetime, until: datetime) -> Table:
+    table = Table(title=f"Hot Zones (from {since} to {until})")
     table.add_column("Directory", style="cyan")
     table.add_column("Commits", justify="right", style="green")
     table.add_column("Contributors", justify="right", style="magenta")
     table.add_column("Last Change", style="yellow")
 
     for z in zones:
-        delta = FIXED_NOW_UTC - z.last_change
+        delta = datetime.now(timezone.utc) - z.last_change
         if delta < timedelta(hours=1):
             last = f"{int(delta.total_seconds() // 60)} min ago"
         elif delta < timedelta(days=1):
@@ -217,4 +218,5 @@ def _generate_table(zones: List[HotZone], days: int) -> Table:
         else:
             last = f"{delta.days} day(s) ago"
         table.add_row(z.path, str(z.commits), str(z.contributors), last)
+    
     return table
