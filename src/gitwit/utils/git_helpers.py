@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional, Iterable
 from git import Commit, Repo
 
 from gitwit.models.blame_line import BlameLine
+from gitwit.utils.repo_singleton import RepoSingleton
 
 def get_filtered_commits(
     since: datetime,
@@ -18,7 +19,7 @@ def get_filtered_commits(
     - Yields commits between since/until
     - Applies authors and directory filters
     """
-    repo = Repo('.', search_parent_directories=True)
+    repo = RepoSingleton.get_repo()
     
     for commit in repo.iter_commits(since=since.isoformat(), until=until.isoformat()):
         if authors and not any(a.lower() in commit.author.name.lower() for a in authors):
@@ -31,7 +32,9 @@ def get_filtered_commits(
         yield commit
 
 
-def fetch_file_paths_tracked_by_git(repo: Repo, search_term: str, directories) -> List[str]:
+def fetch_file_paths_tracked_by_git(search_term: str, directories) -> List[str]:
+    repo = RepoSingleton.get_repo()
+
     all_files = repo.git.ls_files().splitlines()
     matching_files = [f for f in all_files if search_term in os.path.basename(f)]
 
@@ -48,6 +51,8 @@ class BlameFetchError(Exception):
 HEX_SHA = re.compile(r"^[0-9a-f]{7,40}$")
 
 def fetch_file_gitblame(repo: Repo, file_path: Path) -> List[BlameLine]:
+    repo = RepoSingleton.get_repo()
+
     try:
         raw_blame_info = repo.git.blame("--line-porcelain", str(file_path)).splitlines()
         blame_list = _parse_porcelain_blame(raw_blame_info)

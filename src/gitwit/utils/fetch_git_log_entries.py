@@ -1,11 +1,13 @@
 from typing import List, Optional
 
-from git import Repo
 from gitwit.models.git_log_entry import GitLogEntry
+from gitwit.utils.repo_singleton import RepoSingleton
 
 
 # TODO: refactor this to be part of the git_fetch in git helpers
-def fetch_git_log_entries_of_added_files(repo: Repo) -> List[GitLogEntry]:
+def fetch_git_log_entries_of_added_files() -> List[GitLogEntry]:
+    repo = RepoSingleton.get_repo()
+
     raw = repo.git.log(
         '--diff-filter=A',
         '--format=%H%x00%aI%x00%an',

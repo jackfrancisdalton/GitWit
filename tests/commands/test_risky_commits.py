@@ -43,7 +43,10 @@ def repo_mock(monkeypatch):
             return iter(filtered_commits)
 
     def mock_repo(commits):
-        monkeypatch.setattr(git_helpers, "Repo", lambda *_args, **_kwargs: RepoMock(commits))
+        # 1) clear the singleton cache
+        monkeypatch.setattr(git_helpers.RepoSingleton, "_repo", None)
+        # 2) override get_repo to return our mock
+        monkeypatch.setattr(git_helpers.RepoSingleton, "get_repo", classmethod(lambda cls: RepoMock(commits)))
 
     return mock_repo
 

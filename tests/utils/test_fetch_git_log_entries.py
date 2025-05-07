@@ -1,49 +1,80 @@
+import pytest
+from unittest.mock import MagicMock, patch
 from gitwit.utils.fetch_git_log_entries import fetch_git_log_entries_of_added_files
+from gitwit.models.git_log_entry import GitLogEntry
+from gitwit.utils.repo_singleton import RepoSingleton
 
-class DummyRepo:
-    """Mocks Repo for git.log() calls."""
-    def __init__(self, raw_log):
-        self.git = self
-        self._raw = raw_log
+@pytest.fixture
+def mock_repo():
+    with patch('gitwit.utils.repo_singleton.RepoSingleton.get_repo') as mock_get_repo:
+        mock_repo_instance = MagicMock()
+        mock_get_repo.return_value = mock_repo_instance
+        yield mock_repo_instance
 
-    def log(self, *args, **kwargs):
-        return self._raw
 
-def test_convert_git_log_to_log_blocks__single_file_and_multiple_file_commits():
-    # Arrange
-    raw = (
-        "abcd1234\x002025-05-01T12:00:00+00:00\x00Alice\n"
-        "file1.py\n"
+def test_fetch_git_log_entries_of_added_files_single_commit(mock_repo):
+    mock_repo.git.log.return_value = (
+        "abc123\x002023-01-01T12:00:00Z\x00John Doe\n"
+        "file1.txt\n"
         "file2.txt\n"
-        "efgh5678\x002025-04-28T09:30:00+00:00\x00Bob\n"
-        "src/main.py\n"
     )
 
-    repo = DummyRepo(raw)
+    result = fetch_git_log_entries_of_added_files()
 
-    # Act
-    log_blocks = fetch_git_log_entries_of_added_files(repo)
+    assert len(result) == 1
+    assert result[0] == GitLogEntry(
+        commit_hash="abc123",
+        created_at_iso="2023-01-01T12:00:00Z",
+        author="John Doe",
+        files=["file1.txt", "file2.txt"]
+    )
 
-    # Assert
-    assert len(log_blocks) == 2
 
-    assert log_blocks[0].commit_hash == "abcd1234"
-    assert log_blocks[0].created_at_iso == "2025-05-01T12:00:00+00:00"
-    assert log_blocks[0].author == "Alice"
-    assert log_blocks[0].files == ["file1.py", "file2.txt"]
+def test_fetch_git_log_entries_of_added_files_multiple_commits(mock_repo):
+    mock_repo.git.log.return_value = (
+        "abc123\x002023-01-01T12:00:00Z\x00John Doe\n"
+        "file1.txt\n"
+        "file2.txt\n"
+        "def456\x002023-01-02T13:00:00Z\x00Jane Smith\n"
+        "file3.txt\n"
+    )
 
-    assert log_blocks[1].commit_hash == "efgh5678"
-    assert log_blocks[1].created_at_iso == "2025-04-28T09:30:00+00:00"
-    assert log_blocks[1].author == "Bob"
-    assert log_blocks[1].files == ["src/main.py"]
+    result = fetch_git_log_entries_of_added_files()
 
-def test_convert_git_log_to_log_blocks__no_commits():
-    # Arrange
-    raw = ("")
-    repo = DummyRepo(raw)
+    assert len(result) == 2
+    assert result[0] == GitLogEntry(
+        commit_hash="abc123",
+        created_at_iso="2023-01-01T12:00:00Z",
+        author="John Doe",
+        files=["file1.txt", "file2.txt"]
+    )
+    assert result[1] == GitLogEntry(
+        commit_hash="def456",
+        created_at_iso="2023-01-02T13:00:00Z",
+        author="Jane Smith",
+        files=["file3.txt"]
+    )
 
-    # Act
-    log_blocks = fetch_git_log_entries_of_added_files(repo)
 
-    # Assert
-    assert len(log_blocks) == 0
+def test_fetch_git_log_entries_of_added_files_no_commits(mock_repo):
+    mock_repo.git.log.return_value = ""
+
+    result = fetch_git_log_entries_of_added_files()
+
+    assert result == []
+
+
+def test_fetch_git_log_entries_of_added_files_commit_with_no_files(mock_repo):
+    mock_repo.git.log.return_value = (
+        "abc123\x002023-01-01T12:00:00Z\x00John Doe\n"
+    )
+
+    result = fetch_git_log_entries_of_added_files()
+
+    assert len(result) == 1
+    assert result[0] == GitLogEntry(
+        commit_hash="abc123",
+        created_at_iso="2023-01-01T12:00:00Z",
+        author="John Doe",
+        files=[]
+    )

@@ -1,9 +1,8 @@
-# tests/test_latest_file_examples.py
-
 import pytest
 from datetime import datetime
 
 import gitwit.commands.latest_examples_of as latest
+import gitwit.utils.repo_singleton as repo_singleton
 
 class DummyRepo:
     """Mocks Repo for ls_files() calls."""
@@ -28,16 +27,30 @@ class DummyRepoLog:
 
 @pytest.fixture
 def patch_repo_ls(monkeypatch):
-    """Fixture to patch latest.Repo so ls_files returns our list."""
+    """Patch RepoSingleton.get_repo so ls_files returns our list."""
     def _patch(files):
-        monkeypatch.setattr(latest, "Repo", lambda *a, **k: DummyRepo(files))
+        # 1) clear any cached real repo
+        repo_singleton.RepoSingleton._repo = None
+        # 2) patch get_repo to return our DummyRepo
+        monkeypatch.setattr(
+            repo_singleton.RepoSingleton,
+            "get_repo",
+            classmethod(lambda cls: DummyRepo(files))
+        )
     return _patch
 
 @pytest.fixture
 def patch_repo_log(monkeypatch):
-    """Fixture to patch latest.Repo so git.log returns our raw log."""
+    """Patch RepoSingleton.get_repo so git.log returns our raw log."""
     def _patch(raw_log):
-        monkeypatch.setattr(latest, "Repo", lambda *a, **k: DummyRepoLog(raw_log))
+        # 1) clear any cached real repo
+        repo_singleton.RepoSingleton._repo = None
+        # 2) patch get_repo to return our DummyRepoLog
+        monkeypatch.setattr(
+            repo_singleton.RepoSingleton,
+            "get_repo",
+            classmethod(lambda cls: DummyRepoLog(raw_log))
+        )
     return _patch
 
 # =====================================================
@@ -54,10 +67,9 @@ def test_hydrate_examples_and_filter_based_on_git_data__no_filter(patch_repo_log
         "bar.py\n"
     )
     patch_repo_log(raw)
-    repo = latest.Repo(".")
 
     # Act
-    examples = latest._hydrate_examples_and_filter_based_on_git_data(repo, ["foo.py", "bar.py"], None)
+    examples = latest._hydrate_examples_and_filter_based_on_git_data(["foo.py", "bar.py"], None)
 
     # Assert
     assert len(examples) == 2
@@ -79,10 +91,9 @@ def test_hydrate_examples_and_filter_based_on_git_data__author_filter_with_exact
         "bar.py\n"
     )
     patch_repo_log(raw)
-    repo = latest.Repo(".")
 
     # Act
-    examples = latest._hydrate_examples_and_filter_based_on_git_data(repo, ["foo.py", "bar.py"], ["Dave"])
+    examples = latest._hydrate_examples_and_filter_based_on_git_data(["foo.py", "bar.py"], ["Dave"])
 
     # Assert
     assert len(examples) == 1
@@ -101,10 +112,9 @@ def test_hydrate_examples_and_filter_based_on_git_data__author_filter_with_sub_s
         "zoo.py\n"
     )
     patch_repo_log(raw)
-    repo = latest.Repo(".")
 
     # Act
-    examples = latest._hydrate_examples_and_filter_based_on_git_data(repo, ["foo.py", "bar.py", "zoo.py"], ["ja"])
+    examples = latest._hydrate_examples_and_filter_based_on_git_data(["foo.py", "bar.py", "zoo.py"], ["ja"])
 
     # Assert
     assert len(examples) == 3

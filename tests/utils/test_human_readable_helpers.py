@@ -11,7 +11,7 @@ from gitwit.utils.human_readable_helpers import humanise_timedelta
         (timedelta(hours=1), "1 hour(s) ago"),                  # minimum hours    
         (timedelta(hours=23, minutes=59), "23 hour(s) ago"),    # maximum hours
         (timedelta(days=1), "1 day(s) ago"),                    # minimum days
-        (timedelta(days=4000), "4000 day(s) ago"),                  # high days value to test limits      
+        (timedelta(days=4000), "4000 day(s) ago"),              # high days value to test limits      
     ],
 )
 def test_humanise_timedelta(delta, expected):

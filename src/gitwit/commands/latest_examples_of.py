@@ -2,7 +2,6 @@ from typing import List, Optional
 from datetime import datetime
 from dataclasses import dataclass
 import typer
-from git import Repo
 from rich.table import Table
 
 from gitwit.utils.console_singleton import ConsoleSingleton
@@ -39,17 +38,15 @@ def _find_latest_examples(
     authors: Optional[List[str]],
     limit: int
 ) -> List[LatestFileExample]:
-    repo = Repo('.', search_parent_directories=True)
-
     # 1) Generate a list of all filees that match search and directory requiremensts and exist in git history
-    matched_files = fetch_file_paths_tracked_by_git(repo, search_term, directories)
+    matched_files = fetch_file_paths_tracked_by_git(search_term, directories)
 
     # 2) If no files match, fast return empty list
     if not matched_files:
         return []
     
     # 3) Populate data for respective files based on git data, and filter by author if provided
-    examples = _hydrate_examples_and_filter_based_on_git_data(repo, matched_files, authors)
+    examples = _hydrate_examples_and_filter_based_on_git_data(matched_files, authors)
 
     # 4) sort & limit
     examples.sort(key=lambda x: x.created_at, reverse=True)
@@ -57,12 +54,11 @@ def _find_latest_examples(
 
 
 def _hydrate_examples_and_filter_based_on_git_data(
-    repo: Repo,
     target_files: List[str],
     authors: Optional[List[str]]
 ) -> List[LatestFileExample]:
     # Fetch all git commits that have added files and parse into blocks
-    git_log_blocks = fetch_git_log_entries_of_added_files(repo)
+    git_log_blocks = fetch_git_log_entries_of_added_files()
 
     latest_examples_of: List[LatestFileExample] = []
     seen_files: set[str] = set()
