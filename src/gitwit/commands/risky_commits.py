@@ -4,9 +4,10 @@ from typing import List
 import typer
 from git import Commit
 from rich.table import Table
-from utils.console_singleton import ConsoleSingleton
-from utils.date_utils import convert_to_datetime
-from utils.git_helpers import get_filtered_commits
+
+from gitwit.utils.console_singleton import ConsoleSingleton
+from gitwit.utils.date_utils import convert_to_datetime
+from gitwit.utils.git_helpers import get_filtered_commits
 
 
 @dataclass

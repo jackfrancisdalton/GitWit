@@ -5,7 +5,7 @@ import re
 from typing import Any, Dict, List, Optional, Iterable
 from git import Commit, Repo
 
-from models.blame_line import BlameLine
+from gitwit.models.blame_line import BlameLine
 
 def get_filtered_commits(
     since: datetime,

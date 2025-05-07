@@ -1,6 +1,6 @@
 import typer
 
-from commands import repo_hot_zones, show_activity, who_is_the_expert, risky_commits, team_activity, latest_examples_of
+from gitwit.commands import repo_hot_zones, show_activity, who_is_the_expert, risky_commits, team_activity, latest_examples_of
 
 app = typer.Typer()
 

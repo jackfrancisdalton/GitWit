@@ -1,5 +1,5 @@
 
-from utils.git_helpers import fetch_file_paths_tracked_by_git
+from gitwit.utils.git_helpers import fetch_file_paths_tracked_by_git
 
 class DummyRepo:
     """Mocks Repo for ls_files() calls."""

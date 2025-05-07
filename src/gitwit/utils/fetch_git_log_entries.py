@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from git import Repo
-from models.git_log_entry import GitLogEntry
+from gitwit.models.git_log_entry import GitLogEntry
 
 
 # TODO: refactor this to be part of the git_fetch in git helpers

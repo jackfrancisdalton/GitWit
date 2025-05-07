@@ -11,8 +11,9 @@ from rich.progress import (
     TimeElapsedColumn,
     TimeRemainingColumn,
 )
-from utils.console_singleton import ConsoleSingleton
-from utils.date_utils import convert_to_datetime
+
+from gitwit.utils.console_singleton import ConsoleSingleton
+from gitwit.utils.date_utils import convert_to_datetime
 
 @dataclass
 class DeveloperActivity:

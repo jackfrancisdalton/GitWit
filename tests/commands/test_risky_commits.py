@@ -1,9 +1,8 @@
 import pytest
 from datetime import datetime, timedelta
 
-import commands.risky_commits as risk_commits
-import utils.git_helpers as git_helpers
-from commands.risky_commits import _identify_risky_commits
+import gitwit.utils.git_helpers as git_helpers
+from gitwit.commands.risky_commits import _identify_risky_commits
 
 FIXED_NOW = datetime(2023, 1, 1, 12, 0, 0)
 

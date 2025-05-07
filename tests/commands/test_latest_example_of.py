@@ -3,7 +3,7 @@
 import pytest
 from datetime import datetime
 
-import commands.latest_examples_of as latest
+import gitwit.commands.latest_examples_of as latest
 
 class DummyRepo:
     """Mocks Repo for ls_files() calls."""

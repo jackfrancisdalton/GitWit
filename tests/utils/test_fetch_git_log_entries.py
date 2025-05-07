@@ -1,4 +1,4 @@
-from utils.fetch_git_log_entries import fetch_git_log_entries_of_added_files
+from gitwit.utils.fetch_git_log_entries import fetch_git_log_entries_of_added_files
 
 class DummyRepo:
     """Mocks Repo for git.log() calls."""

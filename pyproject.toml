@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gitwit"
-version = "0.1.1"
+version = "0.2.0"
 description = "A CLI for showing activity, experts, etc.. based on git data."
 readme = "README.md"
 authors = [
@@ -26,7 +26,7 @@ classifiers = [
 
 # console_scripts entry point
 [project.scripts]
-gitwit = "cli.cli:app"
+gitwit = "gitwit.cli.cli:app"
 
 # dev-requirements (extras)
 [project.optional-dependencies]
@@ -38,3 +38,7 @@ dev = [
 # (Optional) if you want pytest to auto-add src/ to PYTHONPATH:
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["gitwit*"]

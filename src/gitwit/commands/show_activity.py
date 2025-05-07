@@ -7,8 +7,6 @@ from rich.table import Table
 from collections import Counter
 import typer
 from datetime import datetime, timedelta, timezone
-from utils.date_utils import convert_to_datetime
-from utils.console_singleton import ConsoleSingleton
 from rich.progress import (
     Progress,
     TextColumn,
@@ -17,7 +15,9 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
-from utils.git_helpers import get_filtered_commits
+from gitwit.utils.date_utils import convert_to_datetime
+from gitwit.utils.console_singleton import ConsoleSingleton
+from gitwit.utils.git_helpers import get_filtered_commits
 
 console = ConsoleSingleton.get_console()
 

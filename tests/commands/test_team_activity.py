@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-import commands.team_activity as team_activity
+import gitwit.commands.team_activity as team_activity
 
 # Define a fixed reference date for "now"
 NOW = datetime(2023, 1, 1)

@@ -1,15 +1,15 @@
 import pytest
 from datetime import datetime, timezone, timedelta
 
-import commands.repo_hot_zones as hz
-from commands.repo_hot_zones import (
+import gitwit.commands.repo_hot_zones as hz
+from gitwit.commands.repo_hot_zones import (
     FileCommitEntry,
     _collect_file_commit_entries,
     _generate_file_tree,
     _compress_node_tree,
     _calculate_hot_zones,
 )
-from models.git_log_entry import GitLogEntry
+from gitwit.models.git_log_entry import GitLogEntry
 
 FIXED_NOW = datetime(2025, 5, 6, 0, 0, 0, tzinfo=timezone.utc)
 

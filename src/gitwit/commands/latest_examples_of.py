@@ -4,10 +4,11 @@ from dataclasses import dataclass
 import typer
 from git import Repo
 from rich.table import Table
-from utils.console_singleton import ConsoleSingleton
-from utils.date_utils import convert_to_datetime
-from utils.fetch_git_log_entries import fetch_git_log_entries_of_added_files
-from utils.git_helpers import fetch_file_paths_tracked_by_git
+
+from gitwit.utils.console_singleton import ConsoleSingleton
+from gitwit.utils.date_utils import convert_to_datetime
+from gitwit.utils.fetch_git_log_entries import fetch_git_log_entries_of_added_files
+from gitwit.utils.git_helpers import fetch_file_paths_tracked_by_git
 
 console = ConsoleSingleton.get_console()
 
