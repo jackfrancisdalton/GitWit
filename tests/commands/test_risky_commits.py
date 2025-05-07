@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime, timedelta
 
 import commands.risky_commits as risk_commits
-import utils.repo_helpers as repo_helpers
+import utils.git_helpers as git_helpers
 from commands.risky_commits import _identify_risky_commits
 
 FIXED_NOW = datetime(2023, 1, 1, 12, 0, 0)
@@ -44,7 +44,7 @@ def repo_mock(monkeypatch):
             return iter(filtered_commits)
 
     def mock_repo(commits):
-        monkeypatch.setattr(repo_helpers, "Repo", lambda *_args, **_kwargs: RepoMock(commits))
+        monkeypatch.setattr(git_helpers, "Repo", lambda *_args, **_kwargs: RepoMock(commits))
 
     return mock_repo
 

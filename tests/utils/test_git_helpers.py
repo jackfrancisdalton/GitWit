@@ -1,5 +1,5 @@
 
-from utils.fetch_tracked_git_file_paths import fetch_tracked_git_file_paths
+from utils.git_helpers import fetch_file_paths_tracked_by_git
 
 class DummyRepo:
     """Mocks Repo for ls_files() calls."""
@@ -23,7 +23,7 @@ def test_get_list_of_matching_files__without_dirs():
     repo = DummyRepo(files)
 
     # Act
-    result = fetch_tracked_git_file_paths(repo, ".py", None)
+    result = fetch_file_paths_tracked_by_git(repo, ".py", None)
 
     # Assert
     assert result == ["app.py", "test_app.py", "src/controller.py", "src/controller.pyi"]
@@ -42,7 +42,7 @@ def test_get_list_of_matching_files__with_dirs():
     repo = DummyRepo(files)
 
     # Act
-    result = fetch_tracked_git_file_paths(repo, ".py", ["lib"])
+    result = fetch_file_paths_tracked_by_git(repo, ".py", ["lib"])
 
     # Assert
     assert result == ["lib/app.py", "lib/test_lib.py"]
@@ -57,7 +57,7 @@ def test_get_list_of_matching_files__no_matches():
     repo = DummyRepo(files)
 
     # Act
-    result = fetch_tracked_git_file_paths(repo, ".py", None)
+    result = fetch_file_paths_tracked_by_git(repo, ".py", None)
 
     # Assert
     assert len(result) == 0

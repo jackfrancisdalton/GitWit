@@ -6,7 +6,7 @@ from rich.table import Table
 from utils.console_singleton import ConsoleSingleton
 from utils.date_utils import convert_to_datetime
 from utils.human_readable_helper import humanise_timedelta
-from utils.repo_helpers import get_filtered_commits
+from utils.git_helpers import get_filtered_commits
 
 console = ConsoleSingleton.get_console()
 

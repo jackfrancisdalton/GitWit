@@ -6,7 +6,7 @@ from git import Repo, Commit
 from rich.table import Table
 from utils.console_singleton import ConsoleSingleton
 from utils.date_utils import convert_to_datetime
-from utils.repo_helpers import get_filtered_commits
+from utils.git_helpers import get_filtered_commits
 
 
 @dataclass

@@ -1,20 +1,7 @@
 from datetime import datetime
-from typing import Sequence, List, Optional, Iterable
+import os
+from typing import List, Optional, Iterable
 from git import Commit, Repo
-
-def fetch_commits_in_date_range(since: datetime, until: datetime) -> Sequence[Commit]:
-    """
-    Fetch commits from the repository between two dates.
-    """
-    repo = Repo(".", search_parent_directories=True) # TODO: introduce a singleton pattern for providing the repo
-
-    commits = repo.iter_commits(
-        since=since.isoformat(),
-        until=until.isoformat()
-    )
-
-    return list(commits)
-
 
 def get_filtered_commits(
     since: datetime,
@@ -38,3 +25,14 @@ def get_filtered_commits(
         ):
             continue
         yield commit
+
+
+def fetch_file_paths_tracked_by_git(repo: Repo, search_term: str, directories) -> List[str]:
+    all_files = repo.git.ls_files().splitlines()
+    matching_files = [f for f in all_files if search_term in os.path.basename(f)]
+
+    if directories:
+        dirs = [d.rstrip('/') + '/' for d in directories]
+        matching_files = [f for f in matching_files if any(f.startswith(d) for d in dirs)]
+
+    return matching_files

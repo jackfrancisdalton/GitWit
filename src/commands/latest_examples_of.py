@@ -7,7 +7,7 @@ from rich.table import Table
 from utils.console_singleton import ConsoleSingleton
 from utils.date_utils import convert_to_datetime
 from utils.fetch_git_log_entries import fetch_git_log_entries
-from utils.fetch_tracked_git_file_paths import fetch_tracked_git_file_paths
+from utils.git_helpers import fetch_file_paths_tracked_by_git
 
 console = ConsoleSingleton.get_console()
 
@@ -41,7 +41,7 @@ def _find_latest_examples(
     repo = Repo('.', search_parent_directories=True)
 
     # 1) Generate a list of all filees that match search and directory requiremensts and exist in git history
-    matched_files = fetch_tracked_git_file_paths(repo, search_term, directories)
+    matched_files = fetch_file_paths_tracked_by_git(repo, search_term, directories)
 
     # 2) If no files match, fast return empty list
     if not matched_files:

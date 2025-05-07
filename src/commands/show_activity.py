@@ -7,7 +7,6 @@ from rich.table import Table
 from collections import Counter
 import typer
 from datetime import datetime, timedelta, timezone
-from utils.repo_helpers import fetch_commits_in_date_range, get_filtered_commits
 from utils.date_utils import convert_to_datetime
 from utils.console_singleton import ConsoleSingleton
 from rich.progress import (
@@ -17,6 +16,8 @@ from rich.progress import (
     TimeElapsedColumn,
     TimeRemainingColumn,
 )
+
+from utils.git_helpers import get_filtered_commits
 
 console = ConsoleSingleton.get_console()
 
