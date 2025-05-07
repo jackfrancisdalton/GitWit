@@ -74,7 +74,7 @@ Scans the git repo history for content considered risky, such as commits with ma
 
 
 #### Exmaple Output
-<img src="./readme-resources/risky_commits_of.png" alt="Example Output of Risky Commits" height="400">
+<img src="./readme-resources/risky_commits.png.png" alt="Example Output of Risky Commits" height="400">
 
 
 
