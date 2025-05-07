@@ -1,12 +1,13 @@
 import typer
 from typing import List, Optional
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from dataclasses import dataclass
 from git import Repo
 from rich.table import Table
 from utils.console_singleton import ConsoleSingleton
 from utils.date_utils import convert_to_datetime
 from utils.fetch_git_log_entries import fetch_git_log_entries
+from utils.human_readable_helper import humanise_timedelta
 
 console = ConsoleSingleton.get_console()
 
@@ -210,13 +211,8 @@ def _generate_table(zones: List[HotZone], since: datetime, until: datetime) -> T
     table.add_column("Last Change", style="yellow")
 
     for z in zones:
-        delta = datetime.now(timezone.utc) - z.last_change
-        if delta < timedelta(hours=1):
-            last = f"{int(delta.total_seconds() // 60)} min ago"
-        elif delta < timedelta(days=1):
-            last = f"{delta.seconds // 3600} hour(s) ago"
-        else:
-            last = f"{delta.days} day(s) ago"
-        table.add_row(z.path, str(z.commits), str(z.contributors), last)
+        time_ago_string = humanise_timedelta(datetime.now(timezone.utc) - z.last_change)
+
+        table.add_row(z.path, str(z.commits), str(z.contributors), time_ago_string)
     
     return table
