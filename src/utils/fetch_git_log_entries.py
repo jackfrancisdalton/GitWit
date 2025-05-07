@@ -4,7 +4,7 @@ from git import Repo
 from models.git_log_entry import GitLogEntry
 
 
-# TODO: might not be needed anymore
+# TODO: refactor this as I think the other git commet search will work fine
 def fetch_git_log_entries(repo: Repo) -> List[GitLogEntry]:
     raw = repo.git.log(
         '--diff-filter=A',

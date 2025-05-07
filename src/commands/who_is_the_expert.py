@@ -7,7 +7,7 @@ from git import Repo
 from rich.table import Table
 from models.blame_line import BlameLine
 from utils.console_singleton import ConsoleSingleton
-from utils.fetch_git_blame import fetch_file_gitblame
+from utils.git_helpers import fetch_file_gitblame
 
 @dataclass
 class AuthorActivityData:
