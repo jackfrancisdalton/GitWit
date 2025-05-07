@@ -5,6 +5,7 @@ import typer
 from git import Repo
 from rich.table import Table
 from utils.console_singleton import ConsoleSingleton
+from utils.date_utils import convert_to_datetime
 from utils.fetch_git_log_entries import fetch_git_log_entries
 from utils.fetch_tracked_git_file_paths import fetch_tracked_git_file_paths
 
@@ -96,7 +97,7 @@ def _hydrate_examples_and_filter_based_on_git_data(
                 latest_examples_of.append(
                     LatestFileExample(
                         path=path,
-                        created_at=datetime.fromisoformat(created_at_iso),
+                        created_at=convert_to_datetime(created_at_iso),
                         author=author
                     )
                 )

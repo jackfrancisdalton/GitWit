@@ -99,7 +99,7 @@ def _generate_entries(
     result: List[GitLogFileEntry] = []
 
     for log_entry in git_log_entries:
-        log_entry_date = datetime.fromisoformat(log_entry.created_at_iso.rstrip("Z")).astimezone(timezone.utc)
+        log_entry_date = convert_to_datetime(log_entry.created_at_iso)
 
         # Date Filter
         if log_entry_date < since or log_entry_date > until:
