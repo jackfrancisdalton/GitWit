@@ -27,16 +27,22 @@ class DeveloperActivity:
 console = ConsoleSingleton.get_console()
 
 def command(
-    since: str = typer.Option(
-        ..., help="Start date in YYYY-MM-DD format"
-    ),
-    until: str = typer.Option(
-        ..., help="End date in YYYY-MM-DD format"
-    )
+    since: str = typer.Option(..., help="Start date in YYYY-MM-DD format"),
+    until: str = typer.Option(..., help="End date in YYYY-MM-DD format")
 ):
-    """
-    Summarize developer activity for a given date range.
-    """
+    since_datetime, until_datetime = _handle_date_arguments(since, until)
+
+    if since_datetime > until_datetime:
+        console.print("[red]Start date cannot be after end date.[/red]")
+        raise typer.Exit(1)
+
+    developer_activities = _fetch_developer_activities(since_datetime, until_datetime)
+    table = _generate_activity_table(developer_activities)
+
+    console.print(table)
+
+
+def _handle_date_arguments(since: str, until: str) -> tuple[datetime, datetime]:
     try:
         since_datetime = convert_to_datetime(since)
         until_datetime = convert_to_datetime(until)
@@ -48,11 +54,7 @@ def command(
         console.print("[red]Start date cannot be after end date.[/red]")
         raise typer.Exit(1)
 
-    developer_activities = _fetch_developer_activities(since_datetime, until_datetime)
-    table = _generate_activity_table(developer_activities)
-
-    console.print(table)
-
+    return since_datetime, until_datetime
 
 def _fetch_developer_activities(since_datetime: datetime, until_datetime: datetime):
     repo = Repo(".", search_parent_directories=True)

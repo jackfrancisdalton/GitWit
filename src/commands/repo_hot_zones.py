@@ -45,13 +45,7 @@ def command(
     authors: Optional[List[str]] = typer.Option(None, "--author", "-a", help="Filter commits to these authors"),
     limit: int = typer.Option(10, "--limit", "-n", help="Maximum number of hot zones to show"),
 ):
-    try:
-        since_datetime = convert_to_datetime(since)
-        until_datetime = convert_to_datetime(until)
-    except ValueError:
-        console.print("[red]Invalid date format. Use YYYY-MM-DD.[/red]")
-        raise typer.Exit(1)
-
+    since_datetime, until_datetime = _handle_date_arguments(since, until)
     entries = _collect_file_commit_entries(since_datetime, until_datetime, directories, authors)
 
     if not entries:
@@ -68,6 +62,22 @@ def command(
         console.print(table)
     else:
         console.print(f"[yellow]No activity between {since} and {until}.[/yellow]")
+
+
+def _handle_date_arguments(since: str, until: str) -> tuple[datetime, datetime]:
+    try:
+        since_datetime = convert_to_datetime(since)
+        until_datetime = convert_to_datetime(until)
+    except ValueError:
+        console.print("[red]Invalid date format. Use YYYY-MM-DD.[/red]")
+        raise typer.Exit(1)
+
+    if since_datetime > until_datetime:
+        console.print("[red]Start date cannot be after end date.[/red]")
+        raise typer.Exit(1)
+
+    return since_datetime, until_datetime
+
 
 def _collect_file_commit_entries(
     since: datetime,
@@ -180,7 +190,6 @@ def _generate_table(zones: List[HotZone], since: datetime, until: datetime) -> T
 
     for z in zones:
         time_ago_string = humanise_timedelta(datetime.now(timezone.utc) - z.last_change)
-
         table.add_row(z.path, str(z.commits), str(z.contributors), time_ago_string)
     
     return table

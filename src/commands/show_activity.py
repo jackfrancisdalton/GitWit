@@ -47,12 +47,7 @@ def command(
         help="End date in YYYY-MM-DD",
     ),
 ):
-    try:
-        since_date = convert_to_datetime(since).replace(tzinfo=timezone.utc)
-        until_date = convert_to_datetime(until).replace(tzinfo=timezone.utc)
-    except ValueError:
-        console.print("[red]Invalid date format. Use YYYY-MM-DD.[/red]")
-        raise typer.Exit(1)
+    since_date, until_date = _handle_date_arguments(since, until)
 
     commits = list(get_filtered_commits(
         since=since_date,
@@ -77,6 +72,20 @@ def command(
     console.print(file_stats_table)
     console.print(activity_summary_table)
 
+
+def _handle_date_arguments(since: str, until: str) -> tuple[datetime, datetime]:
+    try:
+        since_datetime = convert_to_datetime(since)
+        until_datetime = convert_to_datetime(until)
+    except ValueError:
+        console.print("[red]Invalid date format. Use YYYY-MM-DD.[/red]")
+        raise typer.Exit(1)
+
+    if since_datetime > until_datetime:
+        console.print("[red]Start date cannot be after end date.[/red]")
+        raise typer.Exit(1)
+
+    return since_datetime, until_datetime
 
 # ================================================================================
 # Computation Functions

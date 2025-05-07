@@ -33,13 +33,7 @@ def command(
     since: str = typer.Option(..., help="Start date in YYYY-MM-DD format"),
     until: str = typer.Option(None, help="End date in YYYY-MM-DD format")
 ):
-    try:
-        since_date = convert_to_datetime(since)
-        until_date = convert_to_datetime(until)
-    except ValueError:
-        console.print(f"[red]Invalid date format provided. Use 'YYYY-MM-DD'.[/red]")
-        raise typer.Exit(1)
-
+    since_date, until_date = _handle_date_arguments(since, until)
     risky_commits = _identify_risky_commits(since_date, until_date)
 
     if not risky_commits:
@@ -48,6 +42,21 @@ def command(
 
     table = _generate_risky_commits_table(risky_commits)
     console.print(table)
+
+
+def _handle_date_arguments(since: str, until: str) -> tuple[datetime, datetime]:
+    try:
+        since_datetime = convert_to_datetime(since)
+        until_datetime = convert_to_datetime(until)
+    except ValueError:
+        console.print("[red]Invalid date format. Use YYYY-MM-DD.[/red]")
+        raise typer.Exit(1)
+
+    if since_datetime > until_datetime:
+        console.print("[red]Start date cannot be after end date.[/red]")
+        raise typer.Exit(1)
+
+    return since_datetime, until_datetime
 
 
 def _identify_risky_commits(since: datetime, until: datetime) -> List[RiskyCommit]:

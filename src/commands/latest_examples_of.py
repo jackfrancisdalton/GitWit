@@ -18,24 +18,11 @@ class LatestFileExample:
     author: str
 
 def command(
-    search_term: str = typer.Argument(
-        ..., help="Substring to match in file names (e.g. .py, controller, testcontroller.py)"
-    ),
-    directories: Optional[List[str]] = typer.Option(
-        None, "--dir", "-d", help="Filter examples to these directory paths"
-    ),
-    authors: Optional[List[str]] = typer.Option(
-        None, "--author", "-a", help="Filter examples to commits by these authors"
-    ),
-    limit: int = typer.Option(
-        10, "--limit", "-n", help="Maximum number of examples to show"
-    ),
+    search_term: str = typer.Argument(..., help="Substring to match in file names (e.g. .py, controller, testcontroller.py)"),
+    directories: Optional[List[str]] = typer.Option(None, "--dir", "-d", help="Filter examples to these directory paths"),
+    authors: Optional[List[str]] = typer.Option(None, "--author", "-a", help="Filter examples to commits by these authors"),
+    limit: int = typer.Option(10, "--limit", "-n", help="Maximum number of examples to show"),
 ):
-    """
-    Show the most recently created files whose basenames contain FILE_PREFIX.
-    Optionally filter by directory paths and commit authors.
-    """
-
     examples = _find_latest_examples(search_term, directories, authors, limit)
 
     if examples:
