@@ -4,6 +4,8 @@ import pytest
 
 import commands.team_activity as team_activity
 
+# Define a fixed reference date for "now"
+NOW = datetime(2023, 1, 1)
 
 class DummyCommit:
     def __init__(self, hexsha, author_name, committed_date, message, stats):
@@ -29,11 +31,13 @@ def repo_mock(monkeypatch):
         def __init__(self, commits):
             self._commits = commits
 
-        def iter_commits(self, since=None, author=None):
+        def iter_commits(self, since=None, until=None, author=None):
             since_ts = datetime.fromisoformat(since).timestamp() if since else 0
+            until_ts = datetime.fromisoformat(until).timestamp() if until else float('inf')
+
             filtered_commits = [
                 c for c in self._commits
-                if c.committed_date >= since_ts and (author is None or c.author.name == author)
+                if since_ts <= c.committed_date <= until_ts and (author is None or c.author.name == author)
             ]
             return iter(filtered_commits)
 
@@ -45,11 +49,11 @@ def repo_mock(monkeypatch):
 def test_fetch_developer_activities__no_commits(repo_mock):
     # Arrange
     repo_mock([])
-    since = datetime.now() - timedelta(days=7)
-    repo = team_activity.Repo(".")
+    since = NOW - timedelta(days=7)
+    until = NOW
 
     # Act
-    results = team_activity._fetch_developer_activities(since)
+    results = team_activity._fetch_developer_activities(since, until)
 
     # Assert
     assert len(results) == 0
@@ -59,17 +63,17 @@ def test_fetch_developer_activities__commit_out_of_range(repo_mock):
     commit_outside_of_date_range = DummyCommit(
         hexsha="def5678",
         author_name="Dev2",
-        committed_date=(datetime.now() - timedelta(days=7) ).timestamp(),
+        committed_date=(NOW - timedelta(days=7, seconds=1)).timestamp(),
         message="Update file",
         stats=DummyStats(20, 10, ["file4.py"])
     )
 
     repo_mock([commit_outside_of_date_range])
-    since = datetime.now() - timedelta(days=7)
-    repo = team_activity.Repo(".")
+    since = NOW - timedelta(days=7)
+    until = NOW - timedelta(days=1)
 
     # Act
-    results = team_activity._fetch_developer_activities(since)
+    results = team_activity._fetch_developer_activities(since, until)
 
     # Assert
     assert len(results) == 0
@@ -79,14 +83,14 @@ def test_fetch_developer_activities__valid_commits(repo_mock):
     simple_commit = DummyCommit(
         hexsha="abc1234",
         author_name="Dev1",
-        committed_date=datetime.now().timestamp(),
+        committed_date=NOW.timestamp(),
         message="Initial commit",
         stats=DummyStats(10, 5, ["file1.py"])
     )
     commit_with_multiple_files = DummyCommit(
         hexsha="def5678",
         author_name="Dev2",
-        committed_date=datetime.now().timestamp(),
+        committed_date=NOW.timestamp(),
         message="Update file",
         stats=DummyStats(20, 10, ["file8.py", "file2.py", "file3.py"])
     )
@@ -95,11 +99,12 @@ def test_fetch_developer_activities__valid_commits(repo_mock):
         simple_commit,
         commit_with_multiple_files,
     ])
-    since = datetime.now() - timedelta(days=7)
-    repo = team_activity.Repo(".")
+
+    since = NOW - timedelta(days=7)
+    until = NOW
 
     # Act
-    results = team_activity._fetch_developer_activities(since)
+    results = team_activity._fetch_developer_activities(since, until)
 
     # Assert
     assert len(results) == 2
@@ -124,14 +129,14 @@ def test_fetch_developer_activities__valid_commits_from_same_author(repo_mock):
     simple_commit = DummyCommit(
         hexsha="abc1234",
         author_name="Dev1",
-        committed_date=datetime.now().timestamp(),
+        committed_date=NOW.timestamp(),
         message="Initial commit",
         stats=DummyStats(10, 5, ["file1.py"])
     )
     commit_with_multiple_files = DummyCommit(
         hexsha="def5678",
         author_name="Dev1",
-        committed_date=datetime.now().timestamp(),
+        committed_date=NOW.timestamp(),
         message="Update file",
         stats=DummyStats(20, 10, ["file4.py", "file2.py", "file3.py"])
     )
@@ -140,11 +145,12 @@ def test_fetch_developer_activities__valid_commits_from_same_author(repo_mock):
         simple_commit,
         commit_with_multiple_files
     ])
-    since = datetime.now() - timedelta(days=7)
-    repo = team_activity.Repo(".")
+
+    since = NOW - timedelta(days=7)
+    until = NOW
 
     # Act
-    results = team_activity._fetch_developer_activities(since)
+    results = team_activity._fetch_developer_activities(since, until)
 
     # Assert
     assert len(results) == 1
@@ -162,21 +168,21 @@ def test_fetch_developer_activities__valid_commits_on_the_same_file(repo_mock):
     simple_commit = DummyCommit(
         hexsha="abc1234",
         author_name="Dev1",
-        committed_date=datetime.now().timestamp(),
+        committed_date=NOW.timestamp(),
         message="Initial commit",
         stats=DummyStats(10, 5, ["file1.py"])
     )
     commit_on_the_same_file = DummyCommit(
         hexsha="def5678",
         author_name="Dev1",
-        committed_date=datetime.now().timestamp(),
+        committed_date=NOW.timestamp(),
         message="Update file",
         stats=DummyStats(20, 10, ["file1.py", "file2.py"])
     )
     commit_from_different_author_on_same_file = DummyCommit(
         hexsha="def5678",
         author_name="Dev2",
-        committed_date=datetime.now().timestamp(),
+        committed_date=NOW.timestamp(),
         message="Update file",
         stats=DummyStats(5, 7, ["file1.py"])
     )
@@ -186,11 +192,12 @@ def test_fetch_developer_activities__valid_commits_on_the_same_file(repo_mock):
         commit_on_the_same_file,
         commit_from_different_author_on_same_file
     ])
-    since = datetime.now() - timedelta(days=7)
-    repo = team_activity.Repo(".")
+
+    since = NOW - timedelta(days=7)
+    until = NOW
 
     # Act
-    results = team_activity._fetch_developer_activities(since)
+    results = team_activity._fetch_developer_activities(since, until)
 
     # Assert
     assert len(results) == 2

@@ -12,6 +12,7 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 from utils.console_singleton import ConsoleSingleton
+from utils.date_utils import convert_to_datetime
 
 @dataclass
 class DeveloperActivity:
@@ -26,30 +27,36 @@ class DeveloperActivity:
 console = ConsoleSingleton.get_console()
 
 def command(
-    period: str = typer.Option(
-        "week", help="Period to summarize: day, week, or month"
+    since: str = typer.Option(
+        ..., help="Start date in YYYY-MM-DD format"
+    ),
+    until: str = typer.Option(
+        ..., help="End date in YYYY-MM-DD format"
     )
 ):
     """
-    Summarize developer activity for a given period.
+    Summarize developer activity for a given date range.
     """
-    period_mapping = {"day": 1, "week": 7, "month": 30, "year": 365 }
-
-    if period not in period_mapping:
-        console.print(f"[red]Invalid period '{period}'. Choose 'day', 'week', or 'month'.[/red]")
+    try:
+        since_datetime = convert_to_datetime(since)
+        until_datetime = convert_to_datetime(until)
+    except ValueError:
+        console.print("[red]Invalid date format. Use YYYY-MM-DD.[/red]")
         raise typer.Exit(1)
 
-    days_ago = datetime.now() - timedelta(days=period_mapping[period])
+    if since_datetime > until_datetime:
+        console.print("[red]Start date cannot be after end date.[/red]")
+        raise typer.Exit(1)
 
-    developer_activities = _fetch_developer_activities(days_ago)
+    developer_activities = _fetch_developer_activities(since_datetime, until_datetime)
     table = _generate_activity_table(developer_activities)
 
     console.print(table)
 
 
-def _fetch_developer_activities(since: datetime):
+def _fetch_developer_activities(since_datetime: datetime, until_datetime: datetime):
     repo = Repo(".", search_parent_directories=True)
-    commits = list(repo.iter_commits(since=since.isoformat()))
+    commits = list(repo.iter_commits(since=since_datetime.isoformat(), until=until_datetime.isoformat()))
     total = len(commits)
 
     activities = {}
