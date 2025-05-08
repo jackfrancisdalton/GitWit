@@ -1,3 +1,4 @@
+from git import Actor, Commit
 import pytest
 from unittest.mock import MagicMock
 from datetime import datetime, timedelta, timezone
@@ -13,17 +14,17 @@ from gitwit.commands.show_activity import (
 @pytest.fixture
 def commit_data():
     now = datetime.now(timezone.utc)
-    author1 = MagicMock()
+    author1 = MagicMock(spec=Actor)
     author1.name = "Alice"
-    author2 = MagicMock()
+    author2 = MagicMock(spec=Actor)
     author2.name = "Bob"
 
-    commit1 = MagicMock()
+    commit1 = MagicMock(spec=Commit)
     commit1.committed_datetime = now - timedelta(days=2)
     commit1.author = author1
     commit1.stats.files = {"file1.py": {"lines": 10}}
 
-    commit2 = MagicMock()
+    commit2 = MagicMock(spec=Commit)
     commit2.committed_datetime = now - timedelta(days=1)
     commit2.author = author2
     commit2.stats.files = {"file2.py": {"lines": 5}}

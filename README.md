@@ -118,6 +118,7 @@ Scans git repo for the hotest zones of activity where hotness is the most commit
 
 
 # Work In Progress: 
+- clean up usesages of datetime now (in particular in test files), should always used fixed now and specified dates
 - clean up test coverage/names
 - add loading bars to all commands
 - add gitwork flow unit testing

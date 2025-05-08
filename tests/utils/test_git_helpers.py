@@ -8,13 +8,13 @@ from gitwit.utils.git_helpers import (
     BlameFetchError
 )
 from gitwit.models.blame_line import BlameLine
-from git import Commit
+from git import Commit, Repo
 from pathlib import Path
 
 @pytest.fixture
 def mock_repo():
     with patch('gitwit.utils.repo_singleton.RepoSingleton.get_repo') as mock_get_repo:
-        mock_repo_instance = MagicMock()
+        mock_repo_instance = MagicMock(spec=Repo)
         mock_get_repo.return_value = mock_repo_instance
         yield mock_repo_instance
 
