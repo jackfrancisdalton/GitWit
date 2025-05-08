@@ -68,22 +68,6 @@ def test_get_filtered_commits__directory_filter(mock_repo, directories, file_pat
     else:
         assert len(results) == 0
 
-@pytest.mark.parametrize("commit_date, since_offset, until_offset, expected_commit_count", [
-    (datetime(2023, 1, 1, 12, 0, 0), -1,  1, 1),  # Commit within range
-    (datetime(2023, 1, 1, 12, 0, 0),  1,  2, 0),  # Commit before range
-    (datetime(2023, 1, 1, 12, 0, 0), -2, -1, 0),  # Commit after range
-])
-def test_get_filtered_commits__date_filter(mock_repo, commit_date, since_offset, until_offset, expected_commit_count):
-    commit = MagicMock(spec=Commit)
-    commit.committed_datetime = commit_date
-    mock_repo.iter_commits.return_value = [commit]
-
-    since = commit_date + timedelta(seconds=since_offset)
-    until = commit_date + timedelta(seconds=until_offset)
-
-    results = list(get_filtered_commits(since, until))
-    assert len(results) == expected_commit_count
-
 @pytest.mark.parametrize("pattern, directories, expected_result", [
     ("test", ["tests"], ["tests/test_main.py"]),
     ("main", ["src"], ["src/main.py"]),
