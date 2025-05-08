@@ -12,7 +12,7 @@ def mock_repo():
         yield mock_repo_instance
 
 
-def test_fetch_git_log_entries_of_added_files_single_commit(mock_repo):
+def test_fetch_git_log_entries__commit_with_multiple_files(mock_repo):
     mock_repo.git.log.return_value = (
         "abc123\x002023-01-01T12:00:00Z\x00John Doe\n"
         "file1.txt\n"
@@ -30,7 +30,7 @@ def test_fetch_git_log_entries_of_added_files_single_commit(mock_repo):
     )
 
 
-def test_fetch_git_log_entries_of_added_files_multiple_commits(mock_repo):
+def test_fetch_git_log_entries__multiple_commits(mock_repo):
     mock_repo.git.log.return_value = (
         "abc123\x002023-01-01T12:00:00Z\x00John Doe\n"
         "file1.txt\n"
@@ -55,16 +55,7 @@ def test_fetch_git_log_entries_of_added_files_multiple_commits(mock_repo):
         files=["file3.txt"]
     )
 
-
-def test_fetch_git_log_entries_of_added_files_no_commits(mock_repo):
-    mock_repo.git.log.return_value = ""
-
-    result = fetch_git_log_entries_of_added_files()
-
-    assert result == []
-
-
-def test_fetch_git_log_entries_of_added_files_commit_with_no_files(mock_repo):
+def test_fetch_git_log__commit_with_no_files(mock_repo):
     mock_repo.git.log.return_value = (
         "abc123\x002023-01-01T12:00:00Z\x00John Doe\n"
     )
@@ -78,3 +69,10 @@ def test_fetch_git_log_entries_of_added_files_commit_with_no_files(mock_repo):
         author="John Doe",
         files=[]
     )
+
+def test_fetch_git_log_entries_of_added_files_no_commits(mock_repo):
+    mock_repo.git.log.return_value = ""
+
+    result = fetch_git_log_entries_of_added_files()
+
+    assert result == []

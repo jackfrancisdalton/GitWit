@@ -1,203 +1,139 @@
+from git import Commit
 import pytest
-from datetime import datetime, timedelta
+from unittest.mock import patch, MagicMock
+from datetime import datetime
+from gitwit.commands.risky_commits import (
+    _handle_date_arguments,
+    _identify_risky_commits,
+    _assess_lines_changed,
+    _assess_files_changed,
+    _assess_keywords,
+)
+from typer import Exit
 
-import gitwit.utils.git_helpers as git_helpers
-from gitwit.commands.risky_commits import _identify_risky_commits
-
-FIXED_NOW = datetime(2023, 1, 1, 12, 0, 0)
-
-class DummyCommit:
-    def __init__(self, hexsha, author_name, committed_date, message, stats):
-        self.hexsha = hexsha
-        self.author = DummyAuthor(author_name)
-        self.committed_date = committed_date
-        self.message = message
-        self.stats = stats
-
-
-class DummyAuthor:
-    def __init__(self, name):
-        self.name = name
-
-
-class DummyStats:
-    def __init__(self, insertions, deletions, files):
-        self.total = {'insertions': insertions, 'deletions': deletions}
-        self.files = files
-
-
-@pytest.fixture
-def repo_mock(monkeypatch):
-    class RepoMock:
-        def __init__(self, commits):
-            self._commits = commits
-
-        def iter_commits(self, since=None, until=None, author=None):
-            since_ts = datetime.fromisoformat(since).timestamp() if since else 0
-            until_ts = datetime.fromisoformat(until).timestamp() if until else float('inf')
-
-            filtered_commits = [
-                c for c in self._commits
-                if since_ts <= c.committed_date <= until_ts and (author is None or c.author.name == author)
-            ]
-            return iter(filtered_commits)
-
-    def mock_repo(commits):
-        # 1) clear the singleton cache
-        monkeypatch.setattr(git_helpers.RepoSingleton, "_repo", None)
-        # 2) override get_repo to return our mock
-        monkeypatch.setattr(git_helpers.RepoSingleton, "get_repo", classmethod(lambda cls: RepoMock(commits)))
-
-    return mock_repo
-
-
-@pytest.mark.parametrize("insertions,deletions,expected_score", [
-    (499, 0, 0),
-    (500, 0, 2),
-    (501, 0, 2)
+@pytest.mark.parametrize("since, until, expected_exception", [
+    ("2023-01-01", "2023-01-02", None),
+    ("2023-01-02", "2023-01-01", Exit),
+    ("2023-01-01", "invalid-date", Exit),
+    ("invalid-date", "2023-01-01", Exit),
 ])
-def test_lines_changed_threshold(repo_mock, insertions, deletions, expected_score):
-    # Arrange
-    commit = DummyCommit(
-        hexsha="abc1234",
-        author_name="Dev",
-        committed_date=(FIXED_NOW - timedelta(days=1)).timestamp(),
-        message="Regular update",
-        stats=DummyStats(insertions, deletions, ["app.py"])
-    )
-    repo_mock([commit])
-    since = FIXED_NOW - timedelta(days=7)
-    until = FIXED_NOW
-
-    # Act
-    results = _identify_risky_commits(since, until)
-
-    # Assert
-    if expected_score == 0:
-        assert len(results) == 0
+def test_handle_date_arguments(since, until, expected_exception):
+    if expected_exception:
+        with pytest.raises(expected_exception):
+            _handle_date_arguments(since, until)
     else:
-        assert len(results) == 1
-        assert results[0].risk_score == expected_score
-        assert results[0].risk_factors[0].description == "Large number of lines changed"
+        since_date, until_date = _handle_date_arguments(since, until)
+        assert isinstance(since_date, datetime)
+        assert isinstance(until_date, datetime)
 
 
-@pytest.mark.parametrize("files_changed,expected_score", [
+# TODO: consider moving to a tests util file
+def create_commit(insertions, deletions, files, message):
+    commit_mock = MagicMock(spec=Commit)
+    commit_mock.stats.total = {'insertions': insertions, 'deletions': deletions}
+    commit_mock.stats.files = {f'file{i}.py': {} for i in range(files)}
+    commit_mock.message = message
+    commit_mock.hexsha = 'abcdef1234567890'
+    commit_mock.author.name = 'John Doe'
+    commit_mock.committed_date = datetime.now().timestamp()
+    return commit_mock
+
+
+@pytest.mark.parametrize("commit_mock,expected_score,expected_factors", [
+    # No risk factors
+    (create_commit(499, 0, 9, "Normal commit"), 0, []),
+
+    # Just below risky number of lines
+    (create_commit(499, 0, 9, "Normal commit"), 0, []),
+
+    # Just above risky number of lines
+    (create_commit(500, 0, 9, "Normal commit"), 2, ["Large number of lines changed"]),
+
+    # Just below risky number of files
+    (create_commit(0, 0, 9, "Normal commit"), 0, []),
+
+    # Just above risky number of files
+    (create_commit(0, 0, 10, "Normal commit"), 2, ["Many files modified"]),
+
+    # Sensitive keyword in message
+    (create_commit(0, 0, 1, "Refactor password logic"), 6, ["Sensitive keyword in commit message"] * 2),
+
+    # Combination: risky lines and sensitive keyword
+    (create_commit(500, 0, 1, "Security improvements"), 5, ["Large number of lines changed", "Sensitive keyword in commit message"]),
+
+    # Combination: risky files and sensitive keyword
+    (create_commit(0, 0, 10, "Fixme: update credentials"), 8, ["Many files modified", "Sensitive keyword in commit message", "Sensitive keyword in commit message"]),
+
+    # All risk factors combined
+    (create_commit(501, 0, 11, "Todo: Refactor security logic"), 13, ["Large number of lines changed", "Many files modified", "Sensitive keyword in commit message", "Sensitive keyword in commit message", "Sensitive keyword in commit message"]),
+])
+@patch('gitwit.commands.risky_commits.get_filtered_commits')
+def test_identify_risky_commits(mock_filtered_commits, commit_mock, expected_score, expected_factors):
+    since = datetime(2023, 1, 1)
+    until = datetime(2023, 1, 2)
+
+    mock_filtered_commits.return_value = [commit_mock]
+
+    risky_commits = _identify_risky_commits(since, until)
+
+    if expected_score == 0:
+        assert len(risky_commits) == 0
+        return
+
+    assert len(risky_commits) == 1
+    risky_commit = risky_commits[0]
+
+    assert risky_commit.commit == commit_mock
+    assert risky_commit.risk_score == expected_score
+    assert len(risky_commit.risk_factors) == len(expected_factors)
+
+    factor_descriptions = [factor.description for factor in risky_commit.risk_factors]
+    for expected_description in expected_factors:
+        assert expected_description in factor_descriptions
+
+
+
+@pytest.mark.parametrize("lines_changed, expected_score", [
+    (499, 0),
+    (500, 2),
+    (501, 2),
+])
+def test_assess_lines_changed(lines_changed, expected_score):
+    factors = []
+    score = _assess_lines_changed(lines_changed, factors)
+
+    assert score == expected_score
+    if expected_score:
+        assert len(factors) == 1
+        assert factors[0].description == "Large number of lines changed"
+    else:
+        assert not factors
+
+@pytest.mark.parametrize("files_changed, expected_score", [
     (9, 0),
     (10, 2),
-    (11, 2)
+    (11, 2),
 ])
-def test_files_changed_threshold(repo_mock, files_changed, expected_score):
-    # Arrange
-    files = [f"file_{i}.py" for i in range(files_changed)]
-    commit = DummyCommit(
-        hexsha="def5678",
-        author_name="Dev",
-        committed_date=(FIXED_NOW - timedelta(days=1)).timestamp(),
-        message="Regular update",
-        stats=DummyStats(10, 5, files)
-    )
-
-    repo_mock([commit])
-    since = FIXED_NOW - timedelta(days=7)
-    until = FIXED_NOW
-    
-    # Act
-    results = _identify_risky_commits(since, until)
-
-    # Assert
-    if expected_score == 0:
-        assert len(results) == 0
+def test_assess_files_changed(files_changed, expected_score):
+    factors = []
+    score = _assess_files_changed(files_changed, factors)
+    assert score == expected_score
+    if expected_score:
+        assert len(factors) == 1
+        assert factors[0].description == "Many files modified"
     else:
-        assert len(results) == 1
-        assert results[0].risk_score == expected_score
-        assert results[0].risk_factors[0].description == "Many files modified"
+        assert not factors
 
-
-@pytest.mark.parametrize("message,expected_score,keyword", [
-    ("This commit contains password reset logic", 3, "password"),
-    ("Regular update", 0, None)
+@pytest.mark.parametrize("message, expected_score, expected_keywords", [
+    ("Fix security issue", 3, ["security"]),
+    ("Refactor and update documentation", 3, ["refactor"]),
+    ("Minor typo fixes", 0, []),
+    ("Add todo and fixme comments", 6, ["fixme", "todo"]),
 ])
-def test_keyword_in_message(repo_mock, message, expected_score, keyword):
-    # Arrange
-    commit = DummyCommit(
-        hexsha="ghi9012",
-        author_name="Dev",
-        committed_date=(FIXED_NOW - timedelta(days=1)).timestamp(),
-        message=message,
-        stats=DummyStats(10, 5, ["app.py"])
-    )
-
-    repo_mock([commit])
-    since = FIXED_NOW - timedelta(days=7)
-    until = FIXED_NOW
-
-    # Act
-    results = _identify_risky_commits(since, until)
-
-    # Assert
-    if expected_score == 0:
-        assert len(results) == 0
-    else:
-        assert len(results) == 1
-        assert results[0].risk_score == expected_score
-        assert any(keyword in factor.details for factor in results[0].risk_factors)
-
-# TODO: invalid until/since range check
-
-# def test_command_no_risky_commits(repo_mock, capsys):
-#     # Arrange
-#     repo_mock([])
-#     risk_commits.command("week")
-
-#     # Act
-#     captured = capsys.readouterr()
-
-#     # Assert
-#     assert "No risky commits found" in captured.out
-
-
-# TODO: test cases for first-time file type commits
-# @pytest.mark.parametrize("commits_data,expected_risks_per_commit", [
-#     (
-#         [
-#             {"author": "Alice", "files": ["file.js"], "message": "Initial commit", "days_ago": 10},
-#             {"author": "Bob", "files": ["file.js"], "message": "Added new files", "days_ago": 0}
-#         ],
-#         [[], ["First-time file type commit by author"]]
-#     ),
-#     (
-#         [
-#             {"author": "Alice", "files": ["file.js"], "message": "Initial commit", "days_ago": 10},
-#             {"author": "Bob", "files": ["file.config.js"], "message": "Added new files", "days_ago": 0}
-#         ],
-#         [[], ["First-time file type commit by author"]]
-#     ),
-#     (
-#         [
-#             {"author": "Alice", "files": ["file.js"], "message": "Initial commit", "days_ago": 10},
-#             {"author": "Alice", "files": ["file.js"], "message": "Added new files", "days_ago": 0}
-#         ],
-#         [[], []]
-#     ),
-#     (
-#         [
-#             {"author": "Alice", "files": ["file.js"], "message": "Initial commit", "days_ago": 10},
-#             {"author": "Alice", "files": ["file.config.js"], "message": "Added new files", "days_ago": 0}
-#         ],
-#         [[], ["First-time file type commit by author"]]
-#     ),
-#     (
-#         [
-#             {"author": "Alice", "files": [], "message": "Initial commit", "days_ago": 10},
-#             {"author": "Bob", "files": ["file.py"], "message": "Added new files", "days_ago": 0}
-#         ],
-#         [[], ["First-time file type commit by author"]]
-#     ),
-#     (
-#         [
-#             {"author": "Alice", "files": ["file.py"], "message": "Initial commit", "days_ago": 10},
-#             {"author": "Alice", "files": ["file.js"], "message": "Added new files", "days_ago": 0}
-#         ],
-#         [[], ["First-time file type commit by author"]]
-#     )
-# ])
+def test_assess_keywords(message, expected_score, expected_keywords):
+    factors = []
+    score = _assess_keywords(message, factors)
+    assert score == expected_score
+    assert len(factors) == len(expected_keywords)
+    for keyword in expected_keywords:
+        assert any(keyword in factor.details for factor in factors)
