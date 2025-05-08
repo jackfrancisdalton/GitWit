@@ -1,7 +1,7 @@
 from git import Commit
 import pytest
 from unittest.mock import patch, MagicMock
-from datetime import datetime
+from datetime import datetime, timedelta
 from gitwit.commands.risky_commits import (
     _handle_date_arguments,
     _identify_risky_commits,
@@ -10,6 +10,9 @@ from gitwit.commands.risky_commits import (
     _assess_keywords,
 )
 from typer import Exit
+
+
+FIXED_NOW = datetime(2023, 1, 1, 12, 0, 0)
 
 @pytest.mark.parametrize("since, until, expected_exception", [
     ("2023-01-01", "2023-01-02", None),
@@ -35,7 +38,7 @@ def create_commit(insertions, deletions, files, message):
     commit_mock.message = message
     commit_mock.hexsha = 'abcdef1234567890'
     commit_mock.author.name = 'John Doe'
-    commit_mock.committed_date = datetime.now().timestamp()
+    commit_mock.committed_date = FIXED_NOW.timestamp()
     return commit_mock
 
 
@@ -69,8 +72,8 @@ def create_commit(insertions, deletions, files, message):
 ])
 @patch('gitwit.commands.risky_commits.get_filtered_commits')
 def test_identify_risky_commits(mock_filtered_commits, commit_mock, expected_score, expected_factors):
-    since = datetime(2023, 1, 1)
-    until = datetime(2023, 1, 2)
+    since = FIXED_NOW - timedelta(days=1)
+    until = FIXED_NOW + timedelta(days=1)
 
     mock_filtered_commits.return_value = [commit_mock]
 

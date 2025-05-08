@@ -11,6 +11,8 @@ from gitwit.models.blame_line import BlameLine
 from git import Commit, Repo
 from pathlib import Path
 
+FIXED_NOW = datetime(2023, 1, 1, 12, 0, 0)
+
 @pytest.fixture
 def mock_repo():
     with patch('gitwit.utils.repo_singleton.RepoSingleton.get_repo') as mock_get_repo:
@@ -32,8 +34,8 @@ def test_get_filtered_commits__author_filter(mock_repo, authors, commit_author, 
     commit.author.name = commit_author
     mock_repo.iter_commits.return_value = [commit]
 
-    since = datetime.now() - timedelta(days=1)
-    until = datetime.now()
+    since = FIXED_NOW - timedelta(days=1)
+    until = FIXED_NOW
 
     results = list(get_filtered_commits(since, until, authors=authors))
 
@@ -55,8 +57,8 @@ def test_get_filtered_commits__directory_filter(mock_repo, directories, file_pat
     commit.stats.files = {f: {} for f in file_paths}
     mock_repo.iter_commits.return_value = [commit]
 
-    since = datetime.now() - timedelta(days=1)
-    until = datetime.now()
+    since = FIXED_NOW - timedelta(days=1)
+    until = FIXED_NOW
 
     results = list(get_filtered_commits(since, until, directories=directories))
 
@@ -68,8 +70,8 @@ def test_get_filtered_commits__directory_filter(mock_repo, directories, file_pat
 
 @pytest.mark.parametrize("commit_date, since_offset, until_offset, expected_commit_count", [
     (datetime(2023, 1, 1, 12, 0, 0), -1,  1, 1),  # Commit within range
-    (datetime(2023, 1, 1, 12, 0, 0),  1,  2, 0),   # Commit before range
-    (datetime(2023, 1, 1, 12, 0, 0), -2, -1, 0), # Commit after range
+    (datetime(2023, 1, 1, 12, 0, 0),  1,  2, 0),  # Commit before range
+    (datetime(2023, 1, 1, 12, 0, 0), -2, -1, 0),  # Commit after range
 ])
 def test_get_filtered_commits__date_filter(mock_repo, commit_date, since_offset, until_offset, expected_commit_count):
     commit = MagicMock(spec=Commit)
@@ -131,24 +133,6 @@ def test_fetch_file_gitblame__success(mock_repo):
     assert result[0].filename == "src/main.py"
     assert result[0].content == "line content in blame entry"
 
-
-
-    #     commit: str
-    # orig_lineno: int
-    # final_lineno: int
-    # num_lines: int
-    # author: str
-    # author_mail: str
-    # author_time: int
-    # author_tz: str
-    # committer: str
-    # committer_mail: str
-    # committer_time: int
-    # committer_tz: str
-    # summary: str
-    # filename: str
-    # content: str
-    # previous: str = ""
 
 def test_fetch_file_gitblame__error(mock_repo):
     mock_repo.git.blame.side_effect = Exception("git blame failed")
