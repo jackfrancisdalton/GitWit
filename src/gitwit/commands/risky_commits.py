@@ -34,6 +34,10 @@ def command(
     since: str = typer.Option(..., help="Start date in YYYY-MM-DD format"),
     until: str = typer.Option(None, help="End date in YYYY-MM-DD format")
 ):
+    """
+    Identify risky commits in the repository based on various risk factors such as commits with many line changes.
+    """
+
     since_date, until_date = _handle_date_arguments(since, until)
     risky_commits = _identify_risky_commits(since_date, until_date)
 

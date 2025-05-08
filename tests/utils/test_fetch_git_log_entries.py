@@ -1,13 +1,13 @@
+from git import Repo
 import pytest
 from unittest.mock import MagicMock, patch
 from gitwit.utils.fetch_git_log_entries import fetch_git_log_entries_of_added_files
 from gitwit.models.git_log_entry import GitLogEntry
-from gitwit.utils.repo_singleton import RepoSingleton
 
 @pytest.fixture
 def mock_repo():
     with patch('gitwit.utils.repo_singleton.RepoSingleton.get_repo') as mock_get_repo:
-        mock_repo_instance = MagicMock()
+        mock_repo_instance = MagicMock(spec=Repo)
         mock_get_repo.return_value = mock_repo_instance
         yield mock_repo_instance
 

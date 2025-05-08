@@ -48,6 +48,10 @@ def command(
         help="End date in YYYY-MM-DD",
     ),
 ):
+    """
+    Show commit activity statistics between two dates.
+    """
+    
     since_date, until_date = _handle_date_arguments(since, until)
 
     commits = list(get_filtered_commits(

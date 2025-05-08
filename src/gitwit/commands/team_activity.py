@@ -31,6 +31,10 @@ def command(
     since: str = typer.Option(..., help="Start date in YYYY-MM-DD format"),
     until: str = typer.Option(..., help="End date in YYYY-MM-DD format")
 ):
+    """
+    Show developer activity summary between two dates.
+    """
+    
     since_datetime, until_datetime = _handle_date_arguments(since, until)
 
     if since_datetime > until_datetime:

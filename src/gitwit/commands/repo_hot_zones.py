@@ -46,6 +46,10 @@ def command(
     authors: Optional[List[str]] = typer.Option(None, "--author", "-a", help="Filter commits to these authors"),
     limit: int = typer.Option(10, "--limit", "-n", help="Maximum number of hot zones to show"),
 ):
+    """
+    Show the most active directories in the repository between two dates.
+    """
+
     since_datetime, until_datetime = _handle_date_arguments(since, until)
     entries = _collect_file_commit_entries(since_datetime, until_datetime, directories, authors)
 
