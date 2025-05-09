@@ -62,6 +62,7 @@ def _handle_date_arguments(since: str, until: str) -> tuple[datetime, datetime]:
     return since_datetime, until_datetime
 
 def _fetch_developer_activities(since_datetime: datetime, until_datetime: datetime):
+    # TODO: refactor to use helper method
     repo = Repo(".", search_parent_directories=True)
     commits = list(repo.iter_commits(since=since_datetime.isoformat(), until=until_datetime.isoformat()))
     total = len(commits)

@@ -32,6 +32,37 @@ def get_filtered_commits(
         yield commit
 
 
+
+# TODO WIP: improve efficiency of this function by doing filtering in git instead of in python
+# def get_filtered_commits(
+#     since: datetime,
+#     until: datetime,
+#     directories: Optional[List[str]] = None,
+#     authors: Optional[List[str]] = None,
+# ) -> Iterable[Commit]:
+#     """
+#     - Instantiates Repo()
+#     - Yields commits between since/until
+#     - Applies authors and directory filters
+#     """
+#     repo = RepoSingleton.get_repo()
+
+#     kwargs = {
+#         "since": since.isoformat(),
+#         "until": until.isoformat(),
+#     }
+
+#     if authors:
+#         # build a case-insensitive regex that matches any of the names as substrings
+#         pattern = "(?i)(" + "|".join(re.escape(a) for a in authors) + ")"
+#         kwargs["author"] = pattern
+
+#     # if directories:
+#     #     kwargs["paths"] = directories
+
+#     return repo.iter_commits(**kwargs)
+
+
 def fetch_file_paths_tracked_by_git(search_term: str, directories) -> List[str]:
     repo = RepoSingleton.get_repo()
 
