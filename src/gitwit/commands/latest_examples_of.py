@@ -3,6 +3,7 @@ from datetime import datetime
 from dataclasses import dataclass
 import typer
 from rich.table import Table
+from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn
 
 from gitwit.utils.console_singleton import ConsoleSingleton
 from gitwit.utils.date_utils import convert_to_datetime
@@ -68,32 +69,41 @@ def _hydrate_examples_and_filter_based_on_git_data(
     seen_files: set[str] = set()
 
     # Loop over blocks, extract commit information, and filter by author if provided
-    for block in git_log_blocks:
-        author = block.author
-        created_at_iso = block.created_at_iso
+    with Progress(
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TextColumn("{task.completed}/{task.total} commits"),
+        TimeElapsedColumn(),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Scanning git history", total=len(git_log_blocks))
 
-        if authors and not any(a.lower() in author.lower() for a in authors):
-            continue
+        for block in git_log_blocks:
+            author = block.author
+            created_at_iso = block.created_at_iso
 
-        for path in block.files:
-            path = path.strip()
-
-            if not path:
+            if authors and not any(a.lower() in author.lower() for a in authors):
+                progress.advance(task)
                 continue
-            
-            if path in target_files and path not in seen_files:
-                latest_examples_of.append(
-                    LatestFileExample(
-                        path=path,
-                        created_at=convert_to_datetime(created_at_iso),
-                        author=author
-                    )
-                )
+
+            for path in block.files:
+                path = path.strip()
+
+                if not path or path not in target_files or path in seen_files:
+                    continue
+                
+                latest_examples_of.append(LatestFileExample(
+                    path=path,
+                    created_at=convert_to_datetime(created_at_iso),
+                    author=author
+                ))
                 seen_files.add(path)
 
-        # If we've seen as many files as we need, break early
-        if len(seen_files) == len(target_files):
-            break
+            progress.advance(task)
+
+            # If we've seen as many files as we need, break early
+            if len(seen_files) >= len(target_files):
+                break
 
     return latest_examples_of
 
