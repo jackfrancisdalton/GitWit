@@ -3,6 +3,7 @@ from typing import List, Optional
 from datetime import datetime, timezone
 from dataclasses import dataclass
 from rich.table import Table
+from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn
 
 from gitwit.utils.console_singleton import ConsoleSingleton
 from gitwit.utils.date_utils import convert_to_datetime
@@ -90,23 +91,35 @@ def _collect_file_commit_entries(
     directories: Optional[List[str]],
     authors: Optional[List[str]]
 ) -> List[FileCommitEntry]:
-    filtered = get_filtered_commits(
+    filtered = list(get_filtered_commits(
         since=since,
         until=until,
         directories=directories,
         authors=authors,
-    )
+    ))
 
     entries: List[FileCommitEntry] = []
 
-    for commit in filtered:
-        for path in commit.stats.files:
-            entries.append(FileCommitEntry(
-                commit.hexsha,
-                path,
-                commit.author.name,
-                commit.committed_datetime.astimezone(timezone.utc),
-            ))
+
+    # TODO: consider wrapping this into the helper function, as re iterating every one, and every file is inefficient
+    with Progress(
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TextColumn("{task.completed}/{task.total} commits"),
+        TimeElapsedColumn(),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Collecting commits", total=len(filtered))
+
+        for commit in filtered:
+            for path in commit.stats.files:
+                entries.append(FileCommitEntry(
+                    commit.hexsha,
+                    path,
+                    commit.author.name,
+                    commit.committed_datetime.astimezone(timezone.utc),
+                ))
+            progress.advance(task)
 
     return entries
 
@@ -141,7 +154,7 @@ def _generate_file_tree(entries: List[FileCommitEntry]) -> Node:
     # 4. Iterate LogEntry instead of tuple
     for e in entries:
         add_entry(e.commit_hash, e.path, e.author, e.date)
-
+        
     return root
 
 
