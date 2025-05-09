@@ -5,6 +5,7 @@ from typing import List
 import typer
 from git import Repo
 from rich.table import Table
+from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn
 
 from gitwit.models.blame_line import BlameLine
 from gitwit.utils.console_singleton import ConsoleSingleton
@@ -55,18 +56,27 @@ def _gather_blame_entries(repo: Repo, target: Path) -> List[BlameLine]:
     """
     entries = []
 
-    if target.is_dir(): # if directory was passed
-        files_in_target_dir = [file for file in target.rglob("*") if file.is_file()]
-        for file in files_in_target_dir:
+    # Build list of files to process
+    if target.is_dir():
+        files_to_process = [file for file in target.rglob("*") if file.is_file()]
+    else:
+        files_to_process = [target]
+
+    # Show progress while fetching blame
+    with Progress(
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TextColumn("{task.completed}/{task.total} files"),
+        TimeElapsedColumn(),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Fetching blame entries", total=len(files_to_process))
+        for file in files_to_process:
             try:
                 entries.extend(fetch_file_gitblame(repo, file))
             except Exception:
-                continue
-    else: # If file was passed
-        try:
-            entries = fetch_file_gitblame(repo, target)
-        except Exception:
-            pass
+                pass
+            progress.advance(task)
 
     return entries
 
