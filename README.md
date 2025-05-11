@@ -1,3 +1,20 @@
+<p align="center">
+  <!-- CI badge -->
+    <a href="https://github.com/jackfrancisdalton/GitWit/actions/workflows/ci.yml">
+        <img
+        src="https://github.com/jackfrancisdalton/GitWit/actions/workflows/ci.yml/badge.svg"
+        alt="CI Status"
+        />
+    </a>
+  <!-- Python versions badge -->
+  <a href="https://pypi.org/project/gitwit/">
+         <img
+            src="https://img.shields.io/badge/python-%3E%3D3.7-blue.svg"
+            alt="Supported Python versions"
+        />
+  </a>
+</p>
+
 <p style="text-align: center;">
     <img src="./readme-resources/gitwit_logo.png" alt="Gitwit Logo" height="300">
 <p>
