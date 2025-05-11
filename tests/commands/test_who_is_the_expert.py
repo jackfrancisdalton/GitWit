@@ -3,7 +3,11 @@ from datetime import datetime
 from typer import Exit as TyperExit
 
 import gitwit.commands.who_is_the_expert as file_expert
-from gitwit.commands.who_is_the_expert import _compute_author_activity, _gather_blame_entries
+from gitwit.commands.who_is_the_expert import (
+    _compute_author_activity,
+    _gather_blame_entries,
+)
+
 
 class DummyBlame:
     def __init__(self, author, author_time, summary, num_lines):
@@ -12,11 +16,13 @@ class DummyBlame:
         self.summary = summary
         self.num_lines = num_lines
 
+
 @pytest.fixture
 def tmp_file(tmp_path):
     p = tmp_path / "dummy.py"
     p.write_text("print('hello')")
     return p
+
 
 @pytest.fixture
 def tmp_dir(tmp_path):
@@ -28,7 +34,9 @@ def tmp_dir(tmp_path):
     f2.write_text("# file2")
     return d
 
+
 # --- Tests for the command function ---
+
 
 def test_command_file_not_exists(tmp_path):
     missing = tmp_path / "noexist.py"
@@ -40,18 +48,14 @@ def test_command_fetch_error(tmp_file, monkeypatch):
     monkeypatch.setattr(
         file_expert,
         "fetch_file_gitblame",
-        lambda repo, path: (_ for _ in ()).throw(Exception("Git blame failed"))
+        lambda repo, path: (_ for _ in ()).throw(Exception("Git blame failed")),
     )
     with pytest.raises(TyperExit):
         file_expert.command(str(tmp_file))
 
 
 def test_command_empty(tmp_file, monkeypatch):
-    monkeypatch.setattr(
-        file_expert,
-        "fetch_file_gitblame",
-        lambda repo, path: []
-    )
+    monkeypatch.setattr(file_expert, "fetch_file_gitblame", lambda repo, path: [])
     with pytest.raises(TyperExit):
         file_expert.command(str(tmp_file))
 
@@ -59,11 +63,7 @@ def test_command_empty(tmp_file, monkeypatch):
 def test_command_file_success(tmp_file, monkeypatch, capsys):
     # Single blame entry for file
     blame = DummyBlame("Alice", 100, "init commit", 4)
-    monkeypatch.setattr(
-        file_expert,
-        "fetch_file_gitblame",
-        lambda repo, path: [blame]
-    )
+    monkeypatch.setattr(file_expert, "fetch_file_gitblame", lambda repo, path: [blame])
     # Limit results to 1
     file_expert.command(str(tmp_file), num_results=1)
     captured = capsys.readouterr()
@@ -78,11 +78,7 @@ def test_command_dir_success(tmp_dir, monkeypatch, capsys):
         name = path.name
         return [DummyBlame(name, 50, f"edit {name}", 1)]
 
-    monkeypatch.setattr(
-        file_expert,
-        "fetch_file_gitblame",
-        fake_blame
-    )
+    monkeypatch.setattr(file_expert, "fetch_file_gitblame", fake_blame)
     file_expert.command(str(tmp_dir), num_results=2)
     out = capsys.readouterr().out
     # Should include directory path in title
@@ -91,21 +87,19 @@ def test_command_dir_success(tmp_dir, monkeypatch, capsys):
     assert "f1.py" in out
     assert "f2.py" in out
 
+
 # --- Tests for helper functions ---
+
 
 def test_gather_blame_entries__file(tmp_file, monkeypatch):
     # Arrange
     bm = DummyBlame("A", 123, "msg", 2)
-    
+
     def fake(repo, path):
         assert path == tmp_file
         return [bm]
-    
-    monkeypatch.setattr(
-        file_expert,
-        "fetch_file_gitblame",
-        fake
-    )
+
+    monkeypatch.setattr(file_expert, "fetch_file_gitblame", fake)
     repo = file_expert.Repo(".", search_parent_directories=True)
 
     # Act
@@ -127,11 +121,7 @@ def test_gather_blame_entries__dir(tmp_dir, monkeypatch):
             return [b2]
         return []
 
-    monkeypatch.setattr(
-        file_expert,
-        "fetch_file_gitblame",
-        fake
-    )
+    monkeypatch.setattr(file_expert, "fetch_file_gitblame", fake)
     repo = file_expert.Repo(".", search_parent_directories=True)
 
     # Act

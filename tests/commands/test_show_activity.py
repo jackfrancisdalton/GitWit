@@ -13,6 +13,7 @@ from gitwit.commands.show_activity import (
 
 FIXED_NOW = datetime(2023, 1, 1, 12, 0, 0)
 
+
 @pytest.fixture
 def commit_data():
     author1 = MagicMock(spec=Actor)
@@ -35,6 +36,7 @@ def commit_data():
         "commit2": commit2,
     }
 
+
 @pytest.mark.parametrize(
     "commit_keys, expected_commit_count, expected_lines",
     [
@@ -43,25 +45,28 @@ def commit_data():
         (["commit1"], 1, {"file1.py": 10}),
     ],
 )
-def test_compute_file_statistics_cases(commit_data, commit_keys, expected_commit_count, expected_lines):
+def test_compute_file_statistics_cases(
+    commit_data, commit_keys, expected_commit_count, expected_lines
+):
     # Arrange
     mock_commits = [commit_data[key] for key in commit_keys]
 
     # Act
     stats_list = _compute_file_statistics(mock_commits)
-    
+
     # Assert
     # List of FileStats
     assert isinstance(stats_list, list)
     assert all(isinstance(fs, FileStats) for fs in stats_list)
-    
+
     # Commit counts and total lines
     assert sum(fs.commits for fs in stats_list) == expected_commit_count
     assert sum(fs.lines for fs in stats_list) == sum(expected_lines.values())
-    
+
     # Per-file lines mapping
     result_map = {fs.file: fs.lines for fs in stats_list}
     assert result_map == expected_lines
+
 
 @pytest.mark.parametrize(
     "commit_keys, expected_commit_count, expected_counter",
@@ -71,22 +76,24 @@ def test_compute_file_statistics_cases(commit_data, commit_keys, expected_commit
         (["commit2"], 1, Counter({"Bob": 1})),
     ],
 )
-def test_compute_author_activity_statistics_cases(commit_data, commit_keys, expected_commit_count, expected_counter):
+def test_compute_author_activity_statistics_cases(
+    commit_data, commit_keys, expected_commit_count, expected_counter
+):
     # Arrange
     mock_commits = [commit_data[key] for key in commit_keys]
 
     # Act
     stats = _compute_author_activity_statistics(mock_commits)
-    
+
     # Assert
 
     # Return type
     assert isinstance(stats, AuthorActivityStats)
-    
+
     # Basic counts
     assert stats.total_commits == expected_commit_count
     assert stats.num_authors == len(expected_counter)
-    
+
     # Top contributor
     if expected_counter:
         top, count = expected_counter.most_common(1)[0]
@@ -94,7 +101,7 @@ def test_compute_author_activity_statistics_cases(commit_data, commit_keys, expe
         top, count = "", 0
     assert stats.top_contributor == top
     assert stats.top_contributor_commits == count
-    
+
     # Total lines
     total_lines = sum(
         details.get("lines", 0)
@@ -102,10 +109,12 @@ def test_compute_author_activity_statistics_cases(commit_data, commit_keys, expe
         for details in commit.stats.files.values()
     )
     assert stats.total_lines == total_lines
-    
+
     # Last commit date
     if mock_commits:
-        expected_last = max(c.committed_datetime for c in mock_commits).strftime("%Y-%m-%d")
+        expected_last = max(c.committed_datetime for c in mock_commits).strftime(
+            "%Y-%m-%d"
+        )
     else:
         expected_last = "N/A"
     assert stats.last_commit_date == expected_last

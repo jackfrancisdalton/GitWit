@@ -14,12 +14,16 @@ from typer import Exit
 
 FIXED_NOW = datetime(2023, 1, 1, 12, 0, 0)
 
-@pytest.mark.parametrize("since, until, expected_exception", [
-    ("2023-01-01", "2023-01-02", None),
-    ("2023-01-02", "2023-01-01", Exit),
-    ("2023-01-01", "invalid-date", Exit),
-    ("invalid-date", "2023-01-01", Exit),
-])
+
+@pytest.mark.parametrize(
+    "since, until, expected_exception",
+    [
+        ("2023-01-01", "2023-01-02", None),
+        ("2023-01-02", "2023-01-01", Exit),
+        ("2023-01-01", "invalid-date", Exit),
+        ("invalid-date", "2023-01-01", Exit),
+    ],
+)
 def test_handle_date_arguments(since, until, expected_exception):
     if expected_exception:
         with pytest.raises(expected_exception):
@@ -33,45 +37,72 @@ def test_handle_date_arguments(since, until, expected_exception):
 # TODO: consider moving to a tests util file
 def create_commit(insertions, deletions, files, message):
     commit_mock = MagicMock(spec=Commit)
-    commit_mock.stats.total = {'insertions': insertions, 'deletions': deletions}
-    commit_mock.stats.files = {f'file{i}.py': {} for i in range(files)}
+    commit_mock.stats.total = {"insertions": insertions, "deletions": deletions}
+    commit_mock.stats.files = {f"file{i}.py": {} for i in range(files)}
     commit_mock.message = message
-    commit_mock.hexsha = 'abcdef1234567890'
-    commit_mock.author.name = 'John Doe'
+    commit_mock.hexsha = "abcdef1234567890"
+    commit_mock.author.name = "John Doe"
     commit_mock.committed_date = FIXED_NOW.timestamp()
     return commit_mock
 
 
-@pytest.mark.parametrize("commit_mock,expected_score,expected_factors", [
-    # No risk factors
-    (create_commit(499, 0, 9, "Normal commit"), 0, []),
-
-    # Just below risky number of lines
-    (create_commit(499, 0, 9, "Normal commit"), 0, []),
-
-    # Just above risky number of lines
-    (create_commit(500, 0, 9, "Normal commit"), 2, ["Large number of lines changed"]),
-
-    # Just below risky number of files
-    (create_commit(0, 0, 9, "Normal commit"), 0, []),
-
-    # Just above risky number of files
-    (create_commit(0, 0, 10, "Normal commit"), 2, ["Many files modified"]),
-
-    # Sensitive keyword in message
-    (create_commit(0, 0, 1, "Refactor password logic"), 6, ["Sensitive keyword in commit message"] * 2),
-
-    # Combination: risky lines and sensitive keyword
-    (create_commit(500, 0, 1, "Security improvements"), 5, ["Large number of lines changed", "Sensitive keyword in commit message"]),
-
-    # Combination: risky files and sensitive keyword
-    (create_commit(0, 0, 10, "Fixme: update credentials"), 8, ["Many files modified", "Sensitive keyword in commit message", "Sensitive keyword in commit message"]),
-
-    # All risk factors combined
-    (create_commit(501, 0, 11, "Todo: Refactor security logic"), 13, ["Large number of lines changed", "Many files modified", "Sensitive keyword in commit message", "Sensitive keyword in commit message", "Sensitive keyword in commit message"]),
-])
-@patch('gitwit.commands.risky_commits.get_filtered_commits')
-def test_identify_risky_commits(mock_filtered_commits, commit_mock, expected_score, expected_factors):
+@pytest.mark.parametrize(
+    "commit_mock,expected_score,expected_factors",
+    [
+        # No risk factors
+        (create_commit(499, 0, 9, "Normal commit"), 0, []),
+        # Just below risky number of lines
+        (create_commit(499, 0, 9, "Normal commit"), 0, []),
+        # Just above risky number of lines
+        (
+            create_commit(500, 0, 9, "Normal commit"),
+            2,
+            ["Large number of lines changed"],
+        ),
+        # Just below risky number of files
+        (create_commit(0, 0, 9, "Normal commit"), 0, []),
+        # Just above risky number of files
+        (create_commit(0, 0, 10, "Normal commit"), 2, ["Many files modified"]),
+        # Sensitive keyword in message
+        (
+            create_commit(0, 0, 1, "Refactor password logic"),
+            6,
+            ["Sensitive keyword in commit message"] * 2,
+        ),
+        # Combination: risky lines and sensitive keyword
+        (
+            create_commit(500, 0, 1, "Security improvements"),
+            5,
+            ["Large number of lines changed", "Sensitive keyword in commit message"],
+        ),
+        # Combination: risky files and sensitive keyword
+        (
+            create_commit(0, 0, 10, "Fixme: update credentials"),
+            8,
+            [
+                "Many files modified",
+                "Sensitive keyword in commit message",
+                "Sensitive keyword in commit message",
+            ],
+        ),
+        # All risk factors combined
+        (
+            create_commit(501, 0, 11, "Todo: Refactor security logic"),
+            13,
+            [
+                "Large number of lines changed",
+                "Many files modified",
+                "Sensitive keyword in commit message",
+                "Sensitive keyword in commit message",
+                "Sensitive keyword in commit message",
+            ],
+        ),
+    ],
+)
+@patch("gitwit.commands.risky_commits.get_filtered_commits")
+def test_identify_risky_commits(
+    mock_filtered_commits, commit_mock, expected_score, expected_factors
+):
     since = FIXED_NOW - timedelta(days=1)
     until = FIXED_NOW + timedelta(days=1)
 
@@ -95,12 +126,14 @@ def test_identify_risky_commits(mock_filtered_commits, commit_mock, expected_sco
         assert expected_description in factor_descriptions
 
 
-
-@pytest.mark.parametrize("lines_changed, expected_score", [
-    (499, 0),
-    (500, 2),
-    (501, 2),
-])
+@pytest.mark.parametrize(
+    "lines_changed, expected_score",
+    [
+        (499, 0),
+        (500, 2),
+        (501, 2),
+    ],
+)
 def test_assess_lines_changed(lines_changed, expected_score):
     factors = []
     score = _assess_lines_changed(lines_changed, factors)
@@ -112,11 +145,15 @@ def test_assess_lines_changed(lines_changed, expected_score):
     else:
         assert not factors
 
-@pytest.mark.parametrize("files_changed, expected_score", [
-    (9, 0),
-    (10, 2),
-    (11, 2),
-])
+
+@pytest.mark.parametrize(
+    "files_changed, expected_score",
+    [
+        (9, 0),
+        (10, 2),
+        (11, 2),
+    ],
+)
 def test_assess_files_changed(files_changed, expected_score):
     factors = []
     score = _assess_files_changed(files_changed, factors)
@@ -127,12 +164,16 @@ def test_assess_files_changed(files_changed, expected_score):
     else:
         assert not factors
 
-@pytest.mark.parametrize("message, expected_score, expected_keywords", [
-    ("Fix security issue", 3, ["security"]),
-    ("Refactor and update documentation", 3, ["refactor"]),
-    ("Minor typo fixes", 0, []),
-    ("Add todo and fixme comments", 6, ["fixme", "todo"]),
-])
+
+@pytest.mark.parametrize(
+    "message, expected_score, expected_keywords",
+    [
+        ("Fix security issue", 3, ["security"]),
+        ("Refactor and update documentation", 3, ["refactor"]),
+        ("Minor typo fixes", 0, []),
+        ("Add todo and fixme comments", 6, ["fixme", "todo"]),
+    ],
+)
 def test_assess_keywords(message, expected_score, expected_keywords):
     factors = []
     score = _assess_keywords(message, factors)

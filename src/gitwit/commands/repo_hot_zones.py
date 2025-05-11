@@ -12,6 +12,7 @@ from gitwit.utils.git_helpers import get_filtered_commits
 
 console = ConsoleSingleton.get_console()
 
+
 @dataclass
 class HotZone:
     path: str
@@ -30,7 +31,15 @@ class FileCommitEntry:
 
 class Node:
     # Slots assigned to the Node class to optimize memory usage
-    __slots__ = ("name", "children", "commits", "direct_commits", "authors", "last_date")
+    __slots__ = (
+        "name",
+        "children",
+        "commits",
+        "direct_commits",
+        "authors",
+        "last_date",
+    )
+
     def __init__(self, name: str):
         self.name = name
         self.children: dict[str, Node] = {}
@@ -41,18 +50,30 @@ class Node:
 
 
 def command(
-    since: str = typer.Option(..., "--since", "-s", help="Start date in YYYY-MM-DD format"),
-    until: str = typer.Option(..., "--until", "-u", help="End date in YYYY-MM-DD format(defaults to now)"),
-    directories: Optional[List[str]] = typer.Option(None, "--dir", "-d", help="Filter commits to these directory paths"),
-    authors: Optional[List[str]] = typer.Option(None, "--author", "-a", help="Filter commits to these authors"),
-    limit: int = typer.Option(10, "--limit", "-n", help="Maximum number of hot zones to show"),
+    since: str = typer.Option(
+        ..., "--since", "-s", help="Start date in YYYY-MM-DD format"
+    ),
+    until: str = typer.Option(
+        ..., "--until", "-u", help="End date in YYYY-MM-DD format(defaults to now)"
+    ),
+    directories: Optional[List[str]] = typer.Option(
+        None, "--dir", "-d", help="Filter commits to these directory paths"
+    ),
+    authors: Optional[List[str]] = typer.Option(
+        None, "--author", "-a", help="Filter commits to these authors"
+    ),
+    limit: int = typer.Option(
+        10, "--limit", "-n", help="Maximum number of hot zones to show"
+    ),
 ):
     """
     Show the most active directories in the repository between two dates.
     """
 
     since_datetime, until_datetime = _handle_date_arguments(since, until)
-    entries = _collect_file_commit_entries(since_datetime, until_datetime, directories, authors)
+    entries = _collect_file_commit_entries(
+        since_datetime, until_datetime, directories, authors
+    )
 
     if not entries:
         return []
@@ -89,17 +110,18 @@ def _collect_file_commit_entries(
     since: datetime,
     until: datetime,
     directories: Optional[List[str]],
-    authors: Optional[List[str]]
+    authors: Optional[List[str]],
 ) -> List[FileCommitEntry]:
-    filtered = list(get_filtered_commits(
-        since=since,
-        until=until,
-        directories=directories,
-        authors=authors,
-    ))
+    filtered = list(
+        get_filtered_commits(
+            since=since,
+            until=until,
+            directories=directories,
+            authors=authors,
+        )
+    )
 
     entries: List[FileCommitEntry] = []
-
 
     # TODO: consider wrapping this into the helper function, as re iterating every one, and every file is inefficient
     with Progress(
@@ -113,12 +135,14 @@ def _collect_file_commit_entries(
 
         for commit in filtered:
             for path in commit.stats.files:
-                entries.append(FileCommitEntry(
-                    commit.hexsha,
-                    path,
-                    commit.author.name,
-                    commit.committed_datetime.astimezone(timezone.utc),
-                ))
+                entries.append(
+                    FileCommitEntry(
+                        commit.hexsha,
+                        path,
+                        commit.author.name,
+                        commit.committed_datetime.astimezone(timezone.utc),
+                    )
+                )
             progress.advance(task)
 
     return entries
@@ -154,7 +178,7 @@ def _generate_file_tree(entries: List[FileCommitEntry]) -> Node:
     # 4. Iterate LogEntry instead of tuple
     for e in entries:
         add_entry(e.commit_hash, e.path, e.author, e.date)
-        
+
     return root
 
 
@@ -179,6 +203,7 @@ def _compress_node_tree(root: Node) -> Node:
     compress(root)
     return root
 
+
 def _calculate_hot_zones(root: Node) -> List[HotZone]:
     zones: List[HotZone] = []
 
@@ -186,12 +211,14 @@ def _calculate_hot_zones(root: Node) -> List[HotZone]:
         for child in node.children.values():
             p = f"{prefix}/{child.name}" if prefix else f"/{child.name}"
 
-            zones.append(HotZone(
-                path=p,
-                commits=len(child.commits),
-                contributors=len(child.authors),
-                last_change=child.last_date
-            ))
+            zones.append(
+                HotZone(
+                    path=p,
+                    commits=len(child.commits),
+                    contributors=len(child.authors),
+                    last_change=child.last_date,
+                )
+            )
 
             gather(child, p)
 
@@ -209,5 +236,5 @@ def _generate_table(zones: List[HotZone], since: datetime, until: datetime) -> T
     for z in zones:
         time_ago_string = humanise_timedelta(datetime.now(timezone.utc) - z.last_change)
         table.add_row(z.path, str(z.commits), str(z.contributors), time_ago_string)
-    
+
     return table

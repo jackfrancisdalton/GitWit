@@ -4,8 +4,10 @@ from datetime import datetime
 import gitwit.commands.latest_examples_of as latest
 import gitwit.utils.repo_singleton as repo_singleton
 
+
 class DummyRepo:
     """Mocks Repo for ls_files() calls."""
+
     def __init__(self, files):
         self.git = self
         self._files = files
@@ -13,8 +15,10 @@ class DummyRepo:
     def ls_files(self):
         return "\n".join(self._files)
 
+
 class DummyRepoLog:
     """Mocks Repo for git.log() calls."""
+
     def __init__(self, raw_log):
         self.git = self
         self._raw = raw_log
@@ -25,9 +29,11 @@ class DummyRepoLog:
     def ls_files(self):
         return ""
 
+
 @pytest.fixture
 def patch_repo_ls(monkeypatch):
     """Patch RepoSingleton.get_repo so ls_files returns our list."""
+
     def _patch(files):
         # 1) clear any cached real repo
         repo_singleton.RepoSingleton._repo = None
@@ -35,13 +41,16 @@ def patch_repo_ls(monkeypatch):
         monkeypatch.setattr(
             repo_singleton.RepoSingleton,
             "get_repo",
-            classmethod(lambda cls: DummyRepo(files))
+            classmethod(lambda cls: DummyRepo(files)),
         )
+
     return _patch
+
 
 @pytest.fixture
 def patch_repo_log(monkeypatch):
     """Patch RepoSingleton.get_repo so git.log returns our raw log."""
+
     def _patch(raw_log):
         # 1) clear any cached real repo
         repo_singleton.RepoSingleton._repo = None
@@ -49,9 +58,11 @@ def patch_repo_log(monkeypatch):
         monkeypatch.setattr(
             repo_singleton.RepoSingleton,
             "get_repo",
-            classmethod(lambda cls: DummyRepoLog(raw_log))
+            classmethod(lambda cls: DummyRepoLog(raw_log)),
         )
+
     return _patch
+
 
 # =====================================================
 # Tests for _hydrate_examples_and_filter_based_on_git_data
@@ -69,7 +80,9 @@ def test_hydrate_examples_and_filter_based_on_git_data__no_filter(patch_repo_log
     patch_repo_log(raw)
 
     # Act
-    examples = latest._hydrate_examples_and_filter_based_on_git_data(["foo.py", "bar.py"], None)
+    examples = latest._hydrate_examples_and_filter_based_on_git_data(
+        ["foo.py", "bar.py"], None
+    )
 
     # Assert
     assert len(examples) == 2
@@ -82,7 +95,10 @@ def test_hydrate_examples_and_filter_based_on_git_data__no_filter(patch_repo_log
     assert examples[1].author == "Dave"
     assert examples[1].created_at == datetime.fromisoformat("2025-05-03T12:30:00+00:00")
 
-def test_hydrate_examples_and_filter_based_on_git_data__author_filter_with_exact_match(patch_repo_log):
+
+def test_hydrate_examples_and_filter_based_on_git_data__author_filter_with_exact_match(
+    patch_repo_log,
+):
     # Arrange
     raw = (
         "h1\x002025-05-02T11:00:00+00:00\x00Carol\n"
@@ -93,7 +109,9 @@ def test_hydrate_examples_and_filter_based_on_git_data__author_filter_with_exact
     patch_repo_log(raw)
 
     # Act
-    examples = latest._hydrate_examples_and_filter_based_on_git_data(["foo.py", "bar.py"], ["Dave"])
+    examples = latest._hydrate_examples_and_filter_based_on_git_data(
+        ["foo.py", "bar.py"], ["Dave"]
+    )
 
     # Assert
     assert len(examples) == 1
@@ -101,7 +119,9 @@ def test_hydrate_examples_and_filter_based_on_git_data__author_filter_with_exact
     assert examples[0].author == "Dave"
 
 
-def test_hydrate_examples_and_filter_based_on_git_data__author_filter_with_sub_string(patch_repo_log):
+def test_hydrate_examples_and_filter_based_on_git_data__author_filter_with_sub_string(
+    patch_repo_log,
+):
     # Arrange
     raw = (
         "h1\x002025-05-02T11:00:00+00:00\x00Jack\n"
@@ -114,7 +134,9 @@ def test_hydrate_examples_and_filter_based_on_git_data__author_filter_with_sub_s
     patch_repo_log(raw)
 
     # Act
-    examples = latest._hydrate_examples_and_filter_based_on_git_data(["foo.py", "bar.py", "zoo.py"], ["ja"])
+    examples = latest._hydrate_examples_and_filter_based_on_git_data(
+        ["foo.py", "bar.py", "zoo.py"], ["ja"]
+    )
 
     # Assert
     assert len(examples) == 3
@@ -142,10 +164,7 @@ def test_find_latest_examples_no_matching_files(patch_repo_ls, patch_repo_log):
     files = ["foo.txt", "bar.js"]
     patch_repo_ls(files)
     # even if there is a log, it shouldn't matter
-    raw = (
-        "h1\x002025-05-01T00:00:00+00:00\x00Alice\n"
-        "foo.txt\n"
-    )
+    raw = "h1\x002025-05-01T00:00:00+00:00\x00Alice\n" "foo.txt\n"
     patch_repo_log(raw)
 
     # Act
@@ -185,6 +204,7 @@ def test_find_latest_examples_limit_zero(patch_repo_ls, patch_repo_log):
 
     # Assert
     assert examples == []
+
 
 # TODO: fix tests
 

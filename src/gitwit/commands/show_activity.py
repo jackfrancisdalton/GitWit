@@ -21,12 +21,14 @@ from gitwit.utils.git_helpers import get_filtered_commits
 
 console = ConsoleSingleton.get_console()
 
+
 @dataclass
 class FileStats:
     file: str
     commits: int = 0
     lines: int = 0
     authors: Counter = field(default_factory=Counter)
+
 
 @dataclass
 class AuthorActivityStats:
@@ -40,34 +42,41 @@ class AuthorActivityStats:
 
 def command(
     since: str = typer.Option(
-        (datetime.now() - timedelta(days=10)).strftime("%Y-%m-%d"), # Default to 10 days ago
+        (datetime.now() - timedelta(days=10)).strftime(
+            "%Y-%m-%d"
+        ),  # Default to 10 days ago
         help="Start date in YYYY-MM-DD",
     ),
     until: str = typer.Option(
-        datetime.now().strftime("%Y-%m-%d"), # Default to today
+        datetime.now().strftime("%Y-%m-%d"),  # Default to today
         help="End date in YYYY-MM-DD",
     ),
 ):
     """
     Show commit activity statistics between two dates.
     """
-    
+
     since_date, until_date = _handle_date_arguments(since, until)
 
-    commits = list(get_filtered_commits(
-        since=since_date,
-        until=until_date,
-    ))
+    commits = list(
+        get_filtered_commits(
+            since=since_date,
+            until=until_date,
+        )
+    )
 
     if not commits:
         console.print("[yellow]No commits found in this date range.[/yellow]")
         raise typer.Exit()
 
     commits_in_time_range = [
-        commit for commit in commits
-        if since_date <= commit.committed_datetime.astimezone(timezone.utc) <= until_date
+        commit
+        for commit in commits
+        if since_date
+        <= commit.committed_datetime.astimezone(timezone.utc)
+        <= until_date
     ]
-    
+
     file_stats = _compute_file_statistics(commits_in_time_range)
     activity_stats = _compute_author_activity_statistics(commits_in_time_range)
 
@@ -92,13 +101,14 @@ def _handle_date_arguments(since: str, until: str) -> Tuple[datetime, datetime]:
 
     return since_datetime, until_datetime
 
+
 # ================================================================================
 # Computation Functions
 # ================================================================================
 
+
 def _compute_file_statistics(
-    commits: Sequence[Commit],
-    result_limit: int = 10
+    commits: Sequence[Commit], result_limit: int = 10
 ) -> List[FileStats]:
     """
     Compute statistics about file activity considering date range,
@@ -118,7 +128,7 @@ def _compute_file_statistics(
             for fname, details in commit.stats.files.items():
                 fname = str(fname)
                 fs = stats_map.get(fname)
-                
+
                 if fs is None:
                     fs = FileStats(file=fname)
                     stats_map[fname] = fs
@@ -129,17 +139,16 @@ def _compute_file_statistics(
             progress.update(task, advance=1)
 
     # sort by total lines changed, descending, and trim to limit
-    sorted_list = sorted(
-        stats_map.values(),
-        key=lambda fs: fs.lines,
-        reverse=True
-    )[:result_limit]
+    sorted_list = sorted(stats_map.values(), key=lambda fs: fs.lines, reverse=True)[
+        :result_limit
+    ]
 
     return sorted_list
 
 
-
-def _compute_author_activity_statistics(commits: Sequence[Commit]) -> AuthorActivityStats:
+def _compute_author_activity_statistics(
+    commits: Sequence[Commit],
+) -> AuthorActivityStats:
     """Filter commits and count author activity considering date range."""
     author_commit_count = Counter(c.author.name for c in commits)
 
@@ -158,9 +167,11 @@ def _compute_author_activity_statistics(commits: Sequence[Commit]) -> AuthorActi
 
     last_commit_date = max(
         (commit.committed_datetime.astimezone(timezone.utc) for commit in commits),
-        default="N/A"
+        default="N/A",
     )
-    last_commit_date_str = last_commit_date.strftime("%Y-%m-%d") if last_commit_date != "N/A" else "N/A"
+    last_commit_date_str = (
+        last_commit_date.strftime("%Y-%m-%d") if last_commit_date != "N/A" else "N/A"
+    )
 
     return AuthorActivityStats(
         total_commits=total_commits,
@@ -172,10 +183,10 @@ def _compute_author_activity_statistics(commits: Sequence[Commit]) -> AuthorActi
     )
 
 
-
 # ================================================================================
 # Table Generators
 # ================================================================================
+
 
 def _generate_file_statistics_table(file_stats: List[FileStats]) -> Table:
     """Generate a table of file statistics."""
@@ -197,6 +208,7 @@ def _generate_file_statistics_table(file_stats: List[FileStats]) -> Table:
         )
 
     return table
+
 
 def _generate_activity_summary_table(activityStats: AuthorActivityStats) -> Table:
     """Generate a summary table of commit activity."""

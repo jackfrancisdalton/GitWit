@@ -1,5 +1,6 @@
 from rich.console import Console
 
+
 class ConsoleSingleton:
     """Singleton Console instance for consistent output formatting."""
 
