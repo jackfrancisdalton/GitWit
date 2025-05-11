@@ -41,3 +41,7 @@ pythonpath = ["src"]
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["gitwit*"]
+
+[tool.flake8]
+exclude = [".venv", "build", "dist"]
+max-line-length = 88
