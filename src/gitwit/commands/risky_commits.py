@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List
+from typing import List, Tuple
 import typer
 from git import Commit
 from rich.table import Table
@@ -49,7 +49,7 @@ def command(
     console.print(table)
 
 
-def _handle_date_arguments(since: str, until: str) -> tuple[datetime, datetime]:
+def _handle_date_arguments(since: str, until: str) -> Tuple[datetime, datetime]:
     try:
         since_datetime = convert_to_datetime(since)
         until_datetime = convert_to_datetime(until)

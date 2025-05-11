@@ -12,8 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        # TODO: add earlier versions once tuple[...] subscripting has been change to use Touple type for backwards compatibility
-        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        python-version: ['3.5', '3.7', '3.10', '3.12', '3.13']
 
     steps:
       - name: Check out code

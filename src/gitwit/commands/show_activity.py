@@ -1,7 +1,7 @@
 """Enhanced Git activity report between two dates."""
 
 from dataclasses import dataclass, field
-from typing import List, Sequence, Dict
+from typing import List, Sequence, Dict, Tuple
 from git import Commit
 from rich.table import Table
 from collections import Counter
@@ -78,7 +78,7 @@ def command(
     console.print(activity_summary_table)
 
 
-def _handle_date_arguments(since: str, until: str) -> tuple[datetime, datetime]:
+def _handle_date_arguments(since: str, until: str) -> Tuple[datetime, datetime]:
     try:
         since_datetime = convert_to_datetime(since)
         until_datetime = convert_to_datetime(until)

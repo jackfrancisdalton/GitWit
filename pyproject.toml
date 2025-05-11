@@ -10,9 +10,9 @@ version = "0.2.0"
 description = "A CLI for showing activity, experts, etc.. based on git data."
 readme = "README.md"
 authors = [
-  { name = "Jack Francis Dalton", email = "jackfrancisdalton@gmail.com" }
+  { name = "Jack Francis Dalton", email = "gitwit@jackfrancisdalton.com" }
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.5"
 dependencies = [
   "typer[all]>=0.9.0",
   "GitPython>=3.1.31",

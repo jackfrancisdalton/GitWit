@@ -1,5 +1,5 @@
 import typer
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from datetime import datetime, timezone
 from dataclasses import dataclass
 from rich.table import Table
@@ -70,7 +70,7 @@ def command(
         console.print(f"[yellow]No activity between {since} and {until}.[/yellow]")
 
 
-def _handle_date_arguments(since: str, until: str) -> tuple[datetime, datetime]:
+def _handle_date_arguments(since: str, until: str) -> Tuple[datetime, datetime]:
     try:
         since_datetime = convert_to_datetime(since)
         until_datetime = convert_to_datetime(until)
