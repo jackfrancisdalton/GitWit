@@ -44,7 +44,7 @@ def command(
     until: str = typer.Option(None, help="End date in YYYY-MM-DD format"),
 ):
     """
-    Identify risky commits in the repository based on various risk factors such as commits with many line changes.
+    Identify risky commits in the repository in a given date range.
     """
 
     since_date, until_date = _handle_date_arguments(since, until)
@@ -92,7 +92,9 @@ def _identify_risky_commits(since: datetime, until: datetime) -> List[RiskyCommi
         risk_score += _assess_lines_changed(total_lines_changed, risk_factors)
         risk_score += _assess_files_changed(files_changed, risk_factors)
         risk_score += _assess_keywords(str(commit.message), risk_factors)
-        # risk_score += _assess_first_time_files(commit, seen_prefixes_by_author, risk_factors) TODO: implement in the future
+        
+        # TODO: implement in the future
+        # risk_score += _assess_first_time_files() 
 
         if risk_score > 0:
             risky_commits.append(

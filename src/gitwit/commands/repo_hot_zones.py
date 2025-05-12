@@ -123,7 +123,7 @@ def _collect_file_commit_entries(
 
     entries: List[FileCommitEntry] = []
 
-    # TODO: consider wrapping this into the helper function, as re iterating every one, and every file is inefficient
+    # TODO: consider improving efficiency here avoiding iterating again
     with Progress(
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),

@@ -53,7 +53,7 @@ def _find_latest_examples(
     authors: Optional[List[str]],
     limit: int,
 ) -> List[LatestFileExample]:
-    # 1) Generate a list of all filees that match search and directory requiremensts and exist in git history
+    # 1) Generate a list of all filees that match filters and exist in git
     matched_files = fetch_file_paths_tracked_by_git(search_term, directories)
 
     # 2) If no files match, fast return empty list
