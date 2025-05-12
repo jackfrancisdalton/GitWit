@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List
+from typing import List, Tuple
 import typer
 from git import Commit
 from rich.table import Table
@@ -22,21 +22,23 @@ class RiskyCommit:
     risk_score: int
     risk_factors: List[RiskFactor] = field(default_factory=list)
 
+@dataclass(frozen=True)
+class RiskConfig:
+    KEYWORDS: Tuple[str, ...] = (
+        "password",
+        "refactor",
+        "security",
+        "key",
+        "secret",
+        "credentials",
+        "fixme",
+        "todo"
+    )
+    LINES_CHANGED_THRESHOLD: int = 500
+    FILES_CHANGED_THRESHOLD: int = 10
 
+RISK_CONFIG = RiskConfig()
 console = ConsoleSingleton.get_console()
-
-KEYWORDS = [
-    "password",
-    "refactor",
-    "security",
-    "key",
-    "secret",
-    "credentials",
-    "fixme",
-    "todo",
-]
-LINES_CHANGED_THRESHOLD = 500
-FILES_CHANGED_THRESHOLD = 10
 
 
 def command(
@@ -90,7 +92,7 @@ def _identify_risky_commits(since: datetime, until: datetime) -> List[RiskyCommi
 
 
 def _assess_lines_changed(total_lines_changed: int, risk_factors: List[RiskFactor]) -> int:
-    if total_lines_changed >= LINES_CHANGED_THRESHOLD:
+    if total_lines_changed >= RISK_CONFIG.LINES_CHANGED_THRESHOLD:
         risk_factors.append(
             RiskFactor(
                 description="Large number of lines changed",
@@ -102,7 +104,7 @@ def _assess_lines_changed(total_lines_changed: int, risk_factors: List[RiskFacto
 
 
 def _assess_files_changed(files_changed: int, risk_factors: List[RiskFactor]) -> int:
-    if files_changed >= FILES_CHANGED_THRESHOLD:
+    if files_changed >= RISK_CONFIG.FILES_CHANGED_THRESHOLD:
         risk_factors.append(
             RiskFactor(
                 description="Many files modified",
@@ -116,7 +118,7 @@ def _assess_files_changed(files_changed: int, risk_factors: List[RiskFactor]) ->
 def _assess_keywords(message: str, risk_factors: List[RiskFactor]) -> int:
     lower_msg = message.lower()
     score = 0
-    for keyword in KEYWORDS:
+    for keyword in RISK_CONFIG.KEYWORDS:
         if keyword in lower_msg:
             risk_factors.append(
                 RiskFactor(
