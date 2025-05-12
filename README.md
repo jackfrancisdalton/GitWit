@@ -35,7 +35,12 @@ By analysing the data available in *1* and exposing it in an appealing way, we c
 
 
 # Installation Guide
-...TODO
+To install gitwit you can simply:
+1. Clone the repo
+2. Ensure you have sourced into a python venv
+3. run `pip install .`
+
+From then on you should be able to use it in any Git repository on your machine
 
 # Commands Manual
 
