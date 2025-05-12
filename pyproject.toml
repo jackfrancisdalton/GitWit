@@ -25,7 +25,7 @@ classifiers = [
 
 # console_scripts entry point
 [project.scripts]
-gitwit = "gitwit.cli.cli:app"
+gitwit = "gitwit.cli:app"
 
 # dev-requirements (extras)
 [project.optional-dependencies]

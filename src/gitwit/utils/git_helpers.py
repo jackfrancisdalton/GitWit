@@ -27,7 +27,7 @@ def get_filtered_commits(
             continue
 
         if directories and not any(
-            str(f).startswith(d.rstrip("/") + "/") for f in commit.stats.files for d in directories
+            str(f).startswith(d.rstrip("/") + "/") for f in commit.stats.files for d in directoriesf
         ):
             continue
         yield commit
