@@ -39,11 +39,6 @@ def command(
     """
 
     since_datetime, until_datetime = handle_since_until_arguments(since, until)
-
-    if since_datetime > until_datetime:
-        console.print("[red]Start date cannot be after end date.[/red]")
-        raise typer.Exit(1)
-
     developer_activities = _fetch_developer_activities(since_datetime, until_datetime)
     table = _generate_activity_table(developer_activities)
 
