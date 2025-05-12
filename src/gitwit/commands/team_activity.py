@@ -129,7 +129,7 @@ def _generate_activity_table(developers: List[DeveloperActivity]) -> Table:
 
     for dev in developers:
         review_time = (
-            f"{dev.review_time_avg.seconds//3600}h {(dev.review_time_avg.seconds//60)%60}m"
+            f"{dev.review_time_avg.seconds//3600}h {(dev.review_time_avg.seconds//60) % 60}m"
             if dev.reviews_done
             else "-"
         )
