@@ -92,23 +92,19 @@ def _identify_risky_commits(since: datetime, until: datetime) -> List[RiskyCommi
         risk_score += _assess_lines_changed(total_lines_changed, risk_factors)
         risk_score += _assess_files_changed(files_changed, risk_factors)
         risk_score += _assess_keywords(str(commit.message), risk_factors)
-        
+
         # TODO: implement in the future
-        # risk_score += _assess_first_time_files() 
+        # risk_score += _assess_first_time_files()
 
         if risk_score > 0:
             risky_commits.append(
-                RiskyCommit(
-                    commit=commit, risk_score=risk_score, risk_factors=risk_factors
-                )
+                RiskyCommit(commit=commit, risk_score=risk_score, risk_factors=risk_factors)
             )
 
     return sorted(risky_commits, key=lambda c: c.risk_score, reverse=True)
 
 
-def _assess_lines_changed(
-    total_lines_changed: int, risk_factors: List[RiskFactor]
-) -> int:
+def _assess_lines_changed(total_lines_changed: int, risk_factors: List[RiskFactor]) -> int:
     if total_lines_changed >= LINES_CHANGED_THRESHOLD:
         risk_factors.append(
             RiskFactor(

@@ -80,9 +80,7 @@ def test_hydrate_examples_and_filter_based_on_git_data__no_filter(patch_repo_log
     patch_repo_log(raw)
 
     # Act
-    examples = latest._hydrate_examples_and_filter_based_on_git_data(
-        ["foo.py", "bar.py"], None
-    )
+    examples = latest._hydrate_examples_and_filter_based_on_git_data(["foo.py", "bar.py"], None)
 
     # Assert
     assert len(examples) == 2
@@ -109,9 +107,7 @@ def test_hydrate_examples_and_filter_based_on_git_data__author_filter_with_exact
     patch_repo_log(raw)
 
     # Act
-    examples = latest._hydrate_examples_and_filter_based_on_git_data(
-        ["foo.py", "bar.py"], ["Dave"]
-    )
+    examples = latest._hydrate_examples_and_filter_based_on_git_data(["foo.py", "bar.py"], ["Dave"])
 
     # Assert
     assert len(examples) == 1

@@ -69,9 +69,7 @@ def _fetch_developer_activities(since_datetime: datetime, until_datetime: dateti
     # TODO: refactor to use helper method
     repo = Repo(".", search_parent_directories=True)
     commits = list(
-        repo.iter_commits(
-            since=since_datetime.isoformat(), until=until_datetime.isoformat()
-        )
+        repo.iter_commits(since=since_datetime.isoformat(), until=until_datetime.isoformat())
     )
     total = len(commits)
 

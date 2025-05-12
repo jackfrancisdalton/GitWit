@@ -23,15 +23,11 @@ def get_filtered_commits(
     repo = RepoSingleton.get_repo()
 
     for commit in repo.iter_commits(since=since.isoformat(), until=until.isoformat()):
-        if authors and not any(
-            a.lower() in commit.author.name.lower() for a in authors
-        ):
+        if authors and not any(a.lower() in commit.author.name.lower() for a in authors):
             continue
 
         if directories and not any(
-            str(f).startswith(d.rstrip("/") + "/")
-            for f in commit.stats.files
-            for d in directories
+            str(f).startswith(d.rstrip("/") + "/") for f in commit.stats.files for d in directories
         ):
             continue
         yield commit
@@ -75,9 +71,7 @@ def fetch_file_paths_tracked_by_git(search_term: str, directories) -> List[str]:
 
     if directories:
         dirs = [d.rstrip("/") + "/" for d in directories]
-        matching_files = [
-            f for f in matching_files if any(f.startswith(d) for d in dirs)
-        ]
+        matching_files = [f for f in matching_files if any(f.startswith(d) for d in dirs)]
 
     return matching_files
 
