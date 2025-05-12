@@ -2,7 +2,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import List
 import typer
 from git import Repo
 from rich.table import Table

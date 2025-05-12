@@ -3,35 +3,14 @@ import pytest
 from unittest.mock import patch, MagicMock
 from datetime import datetime, timedelta
 from gitwit.commands.risky_commits import (
-    _handle_date_arguments,
     _identify_risky_commits,
     _assess_lines_changed,
     _assess_files_changed,
     _assess_keywords,
 )
-from typer import Exit
 
 
 FIXED_NOW = datetime(2023, 1, 1, 12, 0, 0)
-
-
-@pytest.mark.parametrize(
-    "since, until, expected_exception",
-    [
-        ("2023-01-01", "2023-01-02", None),
-        ("2023-01-02", "2023-01-01", Exit),
-        ("2023-01-01", "invalid-date", Exit),
-        ("invalid-date", "2023-01-01", Exit),
-    ],
-)
-def test_handle_date_arguments(since, until, expected_exception):
-    if expected_exception:
-        with pytest.raises(expected_exception):
-            _handle_date_arguments(since, until)
-    else:
-        since_date, until_date = _handle_date_arguments(since, until)
-        assert isinstance(since_date, datetime)
-        assert isinstance(until_date, datetime)
 
 
 # TODO: consider moving to a tests util file

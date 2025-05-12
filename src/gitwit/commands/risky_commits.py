@@ -1,13 +1,13 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Tuple
+from typing import List
 import typer
 from git import Commit
 from rich.table import Table
 
 from gitwit.utils.console_singleton import ConsoleSingleton
-from gitwit.utils.date_utils import convert_to_datetime
 from gitwit.utils.git_helpers import get_filtered_commits
+from gitwit.utils.typer_helpers import handle_since_until_arguments
 
 
 @dataclass
@@ -47,7 +47,7 @@ def command(
     Identify risky commits in the repository in a given date range.
     """
 
-    since_date, until_date = _handle_date_arguments(since, until)
+    since_date, until_date = handle_since_until_arguments(since, until)
     risky_commits = _identify_risky_commits(since_date, until_date)
 
     if not risky_commits:
@@ -56,21 +56,6 @@ def command(
 
     table = _generate_risky_commits_table(risky_commits)
     console.print(table)
-
-
-def _handle_date_arguments(since: str, until: str) -> Tuple[datetime, datetime]:
-    try:
-        since_datetime = convert_to_datetime(since)
-        until_datetime = convert_to_datetime(until)
-    except ValueError:
-        console.print("[red]Invalid date format. Use YYYY-MM-DD.[/red]")
-        raise typer.Exit(1)
-
-    if since_datetime > until_datetime:
-        console.print("[red]Start date cannot be after end date.[/red]")
-        raise typer.Exit(1)
-
-    return since_datetime, until_datetime
 
 
 def _identify_risky_commits(since: datetime, until: datetime) -> List[RiskyCommit]:

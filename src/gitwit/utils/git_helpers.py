@@ -9,6 +9,10 @@ from gitwit.models.blame_line import BlameLine
 from gitwit.utils.repo_singleton import RepoSingleton
 
 
+def count_commits(since: datetime, until: datetime) -> int:
+    repo = RepoSingleton.get_repo()
+    return int(repo.git.rev_list("--count", f"--since={since.isoformat()}", f"--until={until.isoformat()}"))
+
 def get_filtered_commits(
     since: datetime,
     until: datetime,
