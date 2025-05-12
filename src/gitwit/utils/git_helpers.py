@@ -90,13 +90,8 @@ HEX_SHA = re.compile(r"^[0-9a-f]{7,40}$")
 def fetch_file_gitblame(repo: Repo, file_path: Path) -> List[BlameLine]:
     repo = RepoSingleton.get_repo()
 
-    try:
-        raw_blame_info = repo.git.blame("--line-porcelain", str(file_path)).splitlines()
-        blame_list = _parse_porcelain_blame(raw_blame_info)
-    except Exception as e:
-        raise BlameFetchError(
-            f"failed to fetch or parse blame for {file_path} with error {e}"
-        ) from e
+    raw_blame_info = repo.git.blame("--line-porcelain", str(file_path)).splitlines()
+    blame_list = _parse_porcelain_blame(raw_blame_info)
 
     return blame_list
 
@@ -137,6 +132,7 @@ def _parse_porcelain_blame(blame_lines_str: List[str]) -> List[BlameLine]:
             key = key.replace("-", "_")
             if key in ("author_time", "committer_time"):
                 val = int(val)
+                
             current[key] = val
             continue
 

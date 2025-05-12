@@ -61,11 +61,18 @@ def _gather_blame_entries(repo: Repo, target: Path) -> list[BlameLine]:
     Return a combined list of BlameLine entries for a file or all files under a directory,
     fetching each in parallel with a progress bar.
     """
-    # 1) Build the list of files to process
+
+    # TODO: remove
+    # # 1) Build the list of files to process
+    # if target.is_dir():
+    #     files_to_process = [p for p in target.rglob("*") if p.is_file()]
+    # else:
+    #     files_to_process = [target]
+
     if target.is_dir():
-        files_to_process = [p for p in target.rglob("*") if p.is_file()]
+        files_to_process = repo.git.ls_files(str(target)).splitlines()
     else:
-        files_to_process = [target]
+        files_to_process = [str(target)]
 
     entries: list[BlameLine] = []
 
@@ -92,7 +99,7 @@ def _gather_blame_entries(repo: Repo, target: Path) -> list[BlameLine]:
                 try:
                     result = future.result()  # List[BlameLine]
                     entries.extend(result)
-                except BlameFetchError as e:
+                except Exception as e:
                     console.log(f"Blame failed for {path}: {e}", style="yellow")
                 finally:
                     progress.advance(task)
