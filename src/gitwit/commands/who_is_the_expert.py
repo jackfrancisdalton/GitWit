@@ -52,7 +52,6 @@ def command(
     authors_activity_list = _compute_author_activity(blame_entries)
     table = _generate_table(target, authors_activity_list, num_results)
 
-    console.print(f"[yellow]Showing top {num_results} of {len(authors_activity_list)}[/yellow]")
     console.print(table)
     
 
@@ -132,8 +131,9 @@ def _generate_table(target: Path, authors: list[AuthorActivityData], num_results
     """
     Generate a Rich Table summarizing author activity.
     """
+
     total_lines = sum(a.line_count for a in authors)
-    table = Table(title=f"Blame Summary for {target}")
+    table = Table(title=f"Experts for {target}, showing top {num_results} of {len(authors)}")
     table.add_column("Author", style="magenta")
     table.add_column("Lines", justify="right", style="cyan")
     table.add_column("Ownership %", justify="right", style="green")
