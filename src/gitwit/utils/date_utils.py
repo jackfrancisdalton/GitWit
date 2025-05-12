@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+
 def convert_to_datetime(date_str: str) -> datetime:
     """
     Convert an ISO‐8601 date or datetime string to a UTC datetime.

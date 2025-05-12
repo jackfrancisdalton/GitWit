@@ -8,6 +8,7 @@ from git import Commit, Repo
 from gitwit.models.blame_line import BlameLine
 from gitwit.utils.repo_singleton import RepoSingleton
 
+
 def get_filtered_commits(
     since: datetime,
     until: datetime,
@@ -20,17 +21,16 @@ def get_filtered_commits(
     - Applies authors and directory filters
     """
     repo = RepoSingleton.get_repo()
-    
+
     for commit in repo.iter_commits(since=since.isoformat(), until=until.isoformat()):
         if authors and not any(a.lower() in commit.author.name.lower() for a in authors):
             continue
 
         if directories and not any(
-           str(f).startswith(d.rstrip('/') + '/') for f in commit.stats.files for d in directories
+            str(f).startswith(d.rstrip("/") + "/") for f in commit.stats.files for d in directories
         ):
             continue
         yield commit
-
 
 
 # TODO WIP: improve efficiency of this function by doing filtering in git instead of in python
@@ -70,7 +70,7 @@ def fetch_file_paths_tracked_by_git(search_term: str, directories) -> List[str]:
     matching_files = [f for f in all_files if search_term in os.path.basename(f)]
 
     if directories:
-        dirs = [d.rstrip('/') + '/' for d in directories]
+        dirs = [d.rstrip("/") + "/" for d in directories]
         matching_files = [f for f in matching_files if any(f.startswith(d) for d in dirs)]
 
     return matching_files
@@ -79,7 +79,9 @@ def fetch_file_paths_tracked_by_git(search_term: str, directories) -> List[str]:
 class BlameFetchError(Exception):
     """Raised when git-blame for a file can’t be fetched or parsed."""
 
+
 HEX_SHA = re.compile(r"^[0-9a-f]{7,40}$")
+
 
 def fetch_file_gitblame(repo: Repo, file_path: Path) -> List[BlameLine]:
     repo = RepoSingleton.get_repo()
@@ -88,9 +90,12 @@ def fetch_file_gitblame(repo: Repo, file_path: Path) -> List[BlameLine]:
         raw_blame_info = repo.git.blame("--line-porcelain", str(file_path)).splitlines()
         blame_list = _parse_porcelain_blame(raw_blame_info)
     except Exception as e:
-        raise BlameFetchError(f"failed to fetch or parse blame for {file_path} with error {e}") from e
+        raise BlameFetchError(
+            f"failed to fetch or parse blame for {file_path} with error {e}"
+        ) from e
 
     return blame_list
+
 
 def _parse_porcelain_blame(blame_lines_str: List[str]) -> List[BlameLine]:
     blame_lines: List[BlameLine] = []
@@ -130,6 +135,5 @@ def _parse_porcelain_blame(blame_lines_str: List[str]) -> List[BlameLine]:
                 val = int(val)
             current[key] = val
             continue
-        
 
     return blame_lines

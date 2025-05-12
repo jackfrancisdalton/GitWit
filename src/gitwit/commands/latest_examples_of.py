@@ -12,22 +12,30 @@ from gitwit.utils.git_helpers import fetch_file_paths_tracked_by_git
 
 console = ConsoleSingleton.get_console()
 
+
 @dataclass
 class LatestFileExample:
     path: str
     created_at: datetime
     author: str
 
+
 def command(
-    search_term: str = typer.Argument(..., help="Substring to match in file names (e.g. .py, controller, testcontroller.py)"),
-    directories: Optional[List[str]] = typer.Option(None, "--dir", "-d", help="Filter examples to these directory paths"),
-    authors: Optional[List[str]] = typer.Option(None, "--author", "-a", help="Filter examples to commits by these authors"),
+    search_term: str = typer.Argument(
+        ..., help="Substring to match in file names (e.g. .py, controller.py)"
+    ),
+    directories: Optional[List[str]] = typer.Option(
+        None, "--dir", "-d", help="Filter examples to these directory paths"
+    ),
+    authors: Optional[List[str]] = typer.Option(
+        None, "--author", "-a", help="Filter examples to commits by these authors"
+    ),
     limit: int = typer.Option(10, "--limit", "-n", help="Maximum number of examples to show"),
 ):
     """
     Find the latest examples of files matching a search term in the git history.
     """
-    
+
     examples = _find_latest_examples(search_term, directories, authors, limit)
 
     if examples:
@@ -41,16 +49,16 @@ def _find_latest_examples(
     search_term: str,
     directories: Optional[List[str]],
     authors: Optional[List[str]],
-    limit: int
+    limit: int,
 ) -> List[LatestFileExample]:
-    # 1) Generate a list of all filees that match search and directory requiremensts and exist in git history
+    # 1) Generate a list of all filees that match filters and exist in git
     matched_files = fetch_file_paths_tracked_by_git(search_term, directories)
 
     # 2) If no files match, fast return empty list
     if not matched_files:
         return []
-    
-    # 3) Populate data for respective files based on git data, and filter by author if provided
+
+    # 3) Populate data for respective files based on git data, and filter by author
     examples = _hydrate_examples_and_filter_based_on_git_data(matched_files, authors)
 
     # 4) sort & limit
@@ -59,8 +67,7 @@ def _find_latest_examples(
 
 
 def _hydrate_examples_and_filter_based_on_git_data(
-    target_files: List[str],
-    authors: Optional[List[str]]
+    target_files: List[str], authors: Optional[List[str]]
 ) -> List[LatestFileExample]:
     # Fetch all git commits that have added files and parse into blocks
     git_log_blocks = fetch_git_log_entries_of_added_files()
@@ -91,12 +98,14 @@ def _hydrate_examples_and_filter_based_on_git_data(
 
                 if not path or path not in target_files or path in seen_files:
                     continue
-                
-                latest_examples_of.append(LatestFileExample(
-                    path=path,
-                    created_at=convert_to_datetime(created_at_iso),
-                    author=author
-                ))
+
+                latest_examples_of.append(
+                    LatestFileExample(
+                        path=path,
+                        created_at=convert_to_datetime(created_at_iso),
+                        author=author,
+                    )
+                )
                 seen_files.add(path)
 
             progress.advance(task)
@@ -117,7 +126,7 @@ def _generate_table(search_term: str, examples: List[LatestFileExample]) -> Tabl
     for example in examples:
         table.add_row(
             example.path,
-            example.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            example.created_at.strftime("%Y-%m-%d %H:%M:%S"),
             example.author,
         )
 

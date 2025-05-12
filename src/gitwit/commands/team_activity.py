@@ -15,6 +15,7 @@ from rich.progress import (
 from gitwit.utils.console_singleton import ConsoleSingleton
 from gitwit.utils.date_utils import convert_to_datetime
 
+
 @dataclass
 class DeveloperActivity:
     developer: str
@@ -25,16 +26,18 @@ class DeveloperActivity:
     review_time_avg: timedelta
     files_touched: int
 
+
 console = ConsoleSingleton.get_console()
+
 
 def command(
     since: str = typer.Option(..., help="Start date in YYYY-MM-DD format"),
-    until: str = typer.Option(..., help="End date in YYYY-MM-DD format")
+    until: str = typer.Option(..., help="End date in YYYY-MM-DD format"),
 ):
     """
     Show developer activity summary between two dates.
     """
-    
+
     since_datetime, until_datetime = _handle_date_arguments(since, until)
 
     if since_datetime > until_datetime:
@@ -61,10 +64,13 @@ def _handle_date_arguments(since: str, until: str) -> Tuple[datetime, datetime]:
 
     return since_datetime, until_datetime
 
+
 def _fetch_developer_activities(since_datetime: datetime, until_datetime: datetime):
     # TODO: refactor to use helper method
     repo = Repo(".", search_parent_directories=True)
-    commits = list(repo.iter_commits(since=since_datetime.isoformat(), until=until_datetime.isoformat()))
+    commits = list(
+        repo.iter_commits(since=since_datetime.isoformat(), until=until_datetime.isoformat())
+    )
     total = len(commits)
 
     activities = {}
@@ -123,8 +129,9 @@ def _generate_activity_table(developers: List[DeveloperActivity]) -> Table:
 
     for dev in developers:
         review_time = (
-            f"{dev.review_time_avg.seconds//3600}h {(dev.review_time_avg.seconds//60)%60}m"
-            if dev.reviews_done else "-"
+            f"{dev.review_time_avg.seconds//3600}h {(dev.review_time_avg.seconds//60) % 60}m"
+            if dev.reviews_done
+            else "-"
         )
 
         table.add_row(

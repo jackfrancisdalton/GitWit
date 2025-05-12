@@ -4,9 +4,10 @@ from unittest.mock import MagicMock, patch
 from gitwit.utils.fetch_git_log_entries import fetch_git_log_entries_of_added_files
 from gitwit.models.git_log_entry import GitLogEntry
 
+
 @pytest.fixture
 def mock_repo():
-    with patch('gitwit.utils.repo_singleton.RepoSingleton.get_repo') as mock_get_repo:
+    with patch("gitwit.utils.repo_singleton.RepoSingleton.get_repo") as mock_get_repo:
         mock_repo_instance = MagicMock(spec=Repo)
         mock_get_repo.return_value = mock_repo_instance
         yield mock_repo_instance
@@ -14,9 +15,7 @@ def mock_repo():
 
 def test_fetch_git_log_entries__commit_with_multiple_files(mock_repo):
     mock_repo.git.log.return_value = (
-        "abc123\x002023-01-01T12:00:00Z\x00John Doe\n"
-        "file1.txt\n"
-        "file2.txt\n"
+        "abc123\x002023-01-01T12:00:00Z\x00John Doe\n" "file1.txt\n" "file2.txt\n"
     )
 
     result = fetch_git_log_entries_of_added_files()
@@ -26,7 +25,7 @@ def test_fetch_git_log_entries__commit_with_multiple_files(mock_repo):
         commit_hash="abc123",
         created_at_iso="2023-01-01T12:00:00Z",
         author="John Doe",
-        files=["file1.txt", "file2.txt"]
+        files=["file1.txt", "file2.txt"],
     )
 
 
@@ -46,19 +45,18 @@ def test_fetch_git_log_entries__multiple_commits(mock_repo):
         commit_hash="abc123",
         created_at_iso="2023-01-01T12:00:00Z",
         author="John Doe",
-        files=["file1.txt", "file2.txt"]
+        files=["file1.txt", "file2.txt"],
     )
     assert result[1] == GitLogEntry(
         commit_hash="def456",
         created_at_iso="2023-01-02T13:00:00Z",
         author="Jane Smith",
-        files=["file3.txt"]
+        files=["file3.txt"],
     )
 
+
 def test_fetch_git_log__commit_with_no_files(mock_repo):
-    mock_repo.git.log.return_value = (
-        "abc123\x002023-01-01T12:00:00Z\x00John Doe\n"
-    )
+    mock_repo.git.log.return_value = "abc123\x002023-01-01T12:00:00Z\x00John Doe\n"
 
     result = fetch_git_log_entries_of_added_files()
 
@@ -67,8 +65,9 @@ def test_fetch_git_log__commit_with_no_files(mock_repo):
         commit_hash="abc123",
         created_at_iso="2023-01-01T12:00:00Z",
         author="John Doe",
-        files=[]
+        files=[],
     )
+
 
 def test_fetch_git_log_entries_of_added_files_no_commits(mock_repo):
     mock_repo.git.log.return_value = ""

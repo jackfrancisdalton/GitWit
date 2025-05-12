@@ -13,8 +13,10 @@ from gitwit.models.git_log_entry import GitLogEntry
 
 FIXED_NOW = datetime(2025, 5, 6, 0, 0, 0, tzinfo=timezone.utc)
 
+
 class DummyEntry(GitLogEntry):
     """Allow instantiation of GitLogEntry for tests."""
+
     def __init__(self, commit_hash, created_at_iso, author, files):
         self.commit_hash = commit_hash
         self.created_at_iso = created_at_iso
@@ -35,6 +37,7 @@ def make_iso(days_delta: int, hours: int = 0):
 
 # ===== _generate_entries tests =====
 
+
 def test_generate_entries__empty():
     since = FIXED_NOW - timedelta(days=5)
     until = FIXED_NOW
@@ -42,7 +45,9 @@ def test_generate_entries__empty():
 
     assert entries == []
 
+
 # ===== _generate_file_tree + compression + calculate tests =====
+
 
 def test_file_tree__empty():
     # Arrange
@@ -56,12 +61,13 @@ def test_file_tree__empty():
     # Assert
     assert zones == []
 
+
 def test_file_tree__basic_and_hot_zones():
     # Arrange
     entries = [
         FileCommitEntry("h1", "dir/a.txt", "A", FIXED_NOW),
-        FileCommitEntry("h2", "dir/b.txt","B", FIXED_NOW),
-        FileCommitEntry("h3", "dir/a.txt","B", FIXED_NOW),
+        FileCommitEntry("h2", "dir/b.txt", "B", FIXED_NOW),
+        FileCommitEntry("h3", "dir/a.txt", "B", FIXED_NOW),
         FileCommitEntry("h1", "test/test_a.txt", "A", FIXED_NOW),
     ]
 
@@ -84,22 +90,24 @@ def test_file_tree__basic_and_hot_zones():
     assert dir_zone.commits == 1
     assert dir_zone.contributors == 1
 
+
 def test_compress__chain_and_preserve_direct_commit():
-    # Arrange 
+    # Arrange
     entries = [
-        FileCommitEntry("h1", "a/b/file",  "X", FIXED_NOW),
-        FileCommitEntry("h2", "a/b/c/file2","Y", FIXED_NOW),
+        FileCommitEntry("h1", "a/b/file", "X", FIXED_NOW),
+        FileCommitEntry("h2", "a/b/c/file2", "Y", FIXED_NOW),
     ]
 
-    # Act 
+    # Act
     root = _generate_file_tree(entries)
     comp = _compress_node_tree(root)
     zones = _calculate_hot_zones(comp)
-    
+
     # Assert
     paths = {z.path for z in zones}
     assert "/a/b" in paths
     assert "/a/b/c" in paths
+
 
 def test_calculate_hot_zones__flat_tree():
     # Arrange
@@ -109,10 +117,10 @@ def test_calculate_hot_zones__flat_tree():
     c1.commits = {"h1", "h2"}
     c1.authors = {"A"}
     c1.last_date = FIXED_NOW
-    
+
     c2 = hz.Node("y")
     c2.commits = {"h3"}
-    c2.authors = {"B","C"}
+    c2.authors = {"B", "C"}
     c2.last_date = FIXED_NOW
 
     root.children["x"] = c1

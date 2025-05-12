@@ -11,6 +11,7 @@ from gitwit.models.blame_line import BlameLine
 from gitwit.utils.console_singleton import ConsoleSingleton
 from gitwit.utils.git_helpers import fetch_file_gitblame
 
+
 @dataclass
 class AuthorActivityData:
     author: str
@@ -18,12 +19,14 @@ class AuthorActivityData:
     last_commit_date: datetime
     last_commit_message: str
 
+
 console = ConsoleSingleton.get_console()
 app = typer.Typer(name="blame_expert", help="Determine file or directory experts via git blame.")
 
+
 def command(
     path: str = typer.Option(..., help="Path to file or directory to analyze"),
-    num_results: int = typer.Option(5, help="Number of top authors to display")
+    num_results: int = typer.Option(5, help="Number of top authors to display"),
 ):
     """
     Determine who the expert is for a given file or directory based on blame ownership and recency.
@@ -48,6 +51,7 @@ def command(
     authors = _compute_author_activity(blame_entries)
     table = _generate_table(target, authors, num_results)
     console.print(table)
+
 
 # TODO: this need to be improved to ignore untracked directories
 def _gather_blame_entries(repo: Repo, target: Path) -> List[BlameLine]:
@@ -107,11 +111,7 @@ def _compute_author_activity(blame_list) -> list[AuthorActivityData]:
     return list(data.values())
 
 
-def _generate_table(
-    target: Path,
-    authors: list[AuthorActivityData],
-    num_results: int
-) -> Table:
+def _generate_table(target: Path, authors: list[AuthorActivityData], num_results: int) -> Table:
     """
     Generate a Rich Table summarizing author activity.
     """

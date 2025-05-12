@@ -35,6 +35,23 @@ jobs:
           uv pip install -r requirements.txt
           uv pip install --editable . 
 
+
+      - name: Install linting tools
+        run: |
+          uv pip install black flake8
+
+    
+      - name: Lint with Black & Flake8
+        run: |
+          uv run black --check . \
+            --exclude '/(\.git|\.venv|venv|build|dist)/' \
+            --line-length 100
+
+          uv run flake8 . \
+            --max-line-length=100 \
+            --exclude .venv,build,dist
+
+
       - name: Run pytest
         run: |
           uv run pytest --maxfail=1 --disable-warnings -q

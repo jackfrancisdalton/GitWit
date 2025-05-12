@@ -1,5 +1,6 @@
 from git import Repo
 
+
 class RepoSingleton:
     """Singleton Repo instance for consistent repository access."""
 
@@ -8,6 +9,6 @@ class RepoSingleton:
     @classmethod
     def get_repo(cls) -> Repo:
         if cls._repo is None:
-            cls._repo = Repo('.', search_parent_directories=True)
+            cls._repo = Repo(".", search_parent_directories=True)
 
         return cls._repo

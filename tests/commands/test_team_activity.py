@@ -7,6 +7,7 @@ import gitwit.commands.team_activity as team_activity
 # Define a fixed reference date for "now"
 NOW = datetime(2023, 1, 1)
 
+
 class DummyCommit:
     def __init__(self, hexsha, author_name, committed_date, message, stats):
         self.hexsha = hexsha
@@ -15,13 +16,15 @@ class DummyCommit:
         self.message = message
         self.stats = stats
 
+
 class DummyAuthor:
     def __init__(self, name):
         self.name = name
 
+
 class DummyStats:
     def __init__(self, insertions, deletions, files):
-        self.total = {'insertions': insertions, 'deletions': deletions}
+        self.total = {"insertions": insertions, "deletions": deletions}
         self.files = files
 
 
@@ -33,11 +36,13 @@ def repo_mock(monkeypatch):
 
         def iter_commits(self, since=None, until=None, author=None):
             since_ts = datetime.fromisoformat(since).timestamp() if since else 0
-            until_ts = datetime.fromisoformat(until).timestamp() if until else float('inf')
+            until_ts = datetime.fromisoformat(until).timestamp() if until else float("inf")
 
             filtered_commits = [
-                c for c in self._commits
-                if since_ts <= c.committed_date <= until_ts and (author is None or c.author.name == author)
+                c
+                for c in self._commits
+                if since_ts <= c.committed_date <= until_ts
+                and (author is None or c.author.name == author)
             ]
             return iter(filtered_commits)
 
@@ -45,6 +50,7 @@ def repo_mock(monkeypatch):
         monkeypatch.setattr(team_activity, "Repo", lambda *_args, **_kwargs: RepoMock(commits))
 
     return mock_repo
+
 
 def test_fetch_developer_activities__no_commits(repo_mock):
     # Arrange
@@ -58,6 +64,7 @@ def test_fetch_developer_activities__no_commits(repo_mock):
     # Assert
     assert len(results) == 0
 
+
 def test_fetch_developer_activities__commit_out_of_range(repo_mock):
     # Arrange
     commit_outside_of_date_range = DummyCommit(
@@ -65,7 +72,7 @@ def test_fetch_developer_activities__commit_out_of_range(repo_mock):
         author_name="Dev2",
         committed_date=(NOW - timedelta(days=7, seconds=1)).timestamp(),
         message="Update file",
-        stats=DummyStats(20, 10, ["file4.py"])
+        stats=DummyStats(20, 10, ["file4.py"]),
     )
 
     repo_mock([commit_outside_of_date_range])
@@ -77,7 +84,8 @@ def test_fetch_developer_activities__commit_out_of_range(repo_mock):
 
     # Assert
     assert len(results) == 0
-    
+
+
 def test_fetch_developer_activities__valid_commits(repo_mock):
     # Arrange
     simple_commit = DummyCommit(
@@ -85,20 +93,22 @@ def test_fetch_developer_activities__valid_commits(repo_mock):
         author_name="Dev1",
         committed_date=NOW.timestamp(),
         message="Initial commit",
-        stats=DummyStats(10, 5, ["file1.py"])
+        stats=DummyStats(10, 5, ["file1.py"]),
     )
     commit_with_multiple_files = DummyCommit(
         hexsha="def5678",
         author_name="Dev2",
         committed_date=NOW.timestamp(),
         message="Update file",
-        stats=DummyStats(20, 10, ["file8.py", "file2.py", "file3.py"])
+        stats=DummyStats(20, 10, ["file8.py", "file2.py", "file3.py"]),
     )
 
-    repo_mock([
-        simple_commit,
-        commit_with_multiple_files,
-    ])
+    repo_mock(
+        [
+            simple_commit,
+            commit_with_multiple_files,
+        ]
+    )
 
     since = NOW - timedelta(days=7)
     until = NOW
@@ -131,20 +141,17 @@ def test_fetch_developer_activities__valid_commits_from_same_author(repo_mock):
         author_name="Dev1",
         committed_date=NOW.timestamp(),
         message="Initial commit",
-        stats=DummyStats(10, 5, ["file1.py"])
+        stats=DummyStats(10, 5, ["file1.py"]),
     )
     commit_with_multiple_files = DummyCommit(
         hexsha="def5678",
         author_name="Dev1",
         committed_date=NOW.timestamp(),
         message="Update file",
-        stats=DummyStats(20, 10, ["file4.py", "file2.py", "file3.py"])
+        stats=DummyStats(20, 10, ["file4.py", "file2.py", "file3.py"]),
     )
 
-    repo_mock([
-        simple_commit,
-        commit_with_multiple_files
-    ])
+    repo_mock([simple_commit, commit_with_multiple_files])
 
     since = NOW - timedelta(days=7)
     until = NOW
@@ -170,28 +177,30 @@ def test_fetch_developer_activities__valid_commits_on_the_same_file(repo_mock):
         author_name="Dev1",
         committed_date=NOW.timestamp(),
         message="Initial commit",
-        stats=DummyStats(10, 5, ["file1.py"])
+        stats=DummyStats(10, 5, ["file1.py"]),
     )
     commit_on_the_same_file = DummyCommit(
         hexsha="def5678",
         author_name="Dev1",
         committed_date=NOW.timestamp(),
         message="Update file",
-        stats=DummyStats(20, 10, ["file1.py", "file2.py"])
+        stats=DummyStats(20, 10, ["file1.py", "file2.py"]),
     )
     commit_from_different_author_on_same_file = DummyCommit(
         hexsha="def5678",
         author_name="Dev2",
         committed_date=NOW.timestamp(),
         message="Update file",
-        stats=DummyStats(5, 7, ["file1.py"])
+        stats=DummyStats(5, 7, ["file1.py"]),
     )
 
-    repo_mock([
-        simple_commit,
-        commit_on_the_same_file,
-        commit_from_different_author_on_same_file
-    ])
+    repo_mock(
+        [
+            simple_commit,
+            commit_on_the_same_file,
+            commit_from_different_author_on_same_file,
+        ]
+    )
 
     since = NOW - timedelta(days=7)
     until = NOW
