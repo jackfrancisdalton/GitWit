@@ -43,8 +43,13 @@ jobs:
     
       - name: Lint with Black & Flake8
         run: |
-          uv run black --check .
-          uv run flake8 .
+          uv run black --check . \
+            --exclude '/(\.git|\.venv|venv|build|dist)/' \
+            --line-length 88
+
+          uv run flake8 . \
+            --max-line-length=88 \
+            --exclude .venv,build,dist
 
 
       - name: Run pytest

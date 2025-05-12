@@ -41,20 +41,3 @@ pythonpath = ["src"]
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["gitwit*"]
-
-[tool.flake8]
-exclude = [".venv", "build", "dist"]
-max-line-length = 88
-
-[tool.black]
-# ignore .git/, .venv/, build/, dist/, etc.
-exclude = '''
-/(
-  \.git
-| \.venv
-| venv
-| build
-| dist
-)/
-'''
-line-length = 88
