@@ -62,12 +62,7 @@ def _gather_blame_entries(repo: Repo, target: Path) -> list[BlameLine]:
     fetching each in parallel with a progress bar.
     """
 
-    # TODO: remove
-    # # 1) Build the list of files to process
-    # if target.is_dir():
-    #     files_to_process = [p for p in target.rglob("*") if p.is_file()]
-    # else:
-    #     files_to_process = [target]
+ 
 
     if target.is_dir():
         files_to_process = repo.git.ls_files(str(target)).splitlines()
@@ -76,7 +71,7 @@ def _gather_blame_entries(repo: Repo, target: Path) -> list[BlameLine]:
 
     entries: list[BlameLine] = []
 
-    # 2) Kick off parallel fetches and track progress
+# 2) Kick off parallel fetches and track progress
     with Progress(
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),

@@ -28,14 +28,19 @@ def tmp_file(tmp_path):
 def tmp_dir(tmp_path):
     d = tmp_path / "test_dir"
     d.mkdir()
+
     f1 = d / "f1.py"
     f2 = d / "f2.py"
+
     f1.write_text("# file1")
     f2.write_text("# file2")
+    
     return d
 
 
-# --- Tests for the command function ---
+# ====================================================
+# Tests for: command()
+# ====================================================
 
 
 def test_command_file_not_exists(tmp_path):
@@ -88,8 +93,9 @@ def test_command_dir_success(tmp_dir, monkeypatch, capsys):
     assert "f2.py" in out
 
 
-# --- Tests for helper functions ---
-
+# ====================================================
+# Tests for: _gather_blame_entries()
+# ====================================================
 
 def test_gather_blame_entries__file(tmp_file, monkeypatch):
     # Arrange
@@ -131,6 +137,11 @@ def test_gather_blame_entries__dir(tmp_dir, monkeypatch):
     assert len(entries) == 2
     assert b1 in entries
     assert b2 in entries
+
+
+# ====================================================
+# Tests for: _compute_author_activity()
+# ====================================================
 
 
 def test_compute_author_activity__empty():
