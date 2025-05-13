@@ -21,15 +21,19 @@ def mock_repo():
         mock_get_repo.return_value = mock_repo_instance
         yield mock_repo_instance
 
+# ====================================================
+# Tests for: get_filtered_commits()
+# ====================================================
+
 
 @pytest.mark.parametrize(
     "authors, commit_author, expected_match",
     [
-        (["jack"], "Jack Sparrow", True),  # First name
-        (["ja"], "Jane Doe", True),  # Substring prefix of first name
-        (["ja"], "Raja", True),  # Substring in middle of first name
-        (["ja"], "Michael", False),  # Substring not in name
-        (["smith"], "Jane Smith", True),  # Last name match
+        (["jack"], "Jack Smith", True),  # First name
+        (["ja"], "Jane Doe", True),        # Substring prefix of first name
+        (["ja"], "Raja", True),            # Substring in middle of first name
+        (["ja"], "Michael", False),        # Substring not in name
+        (["smith"], "Jane Smith", True),   # Last name match
         (["John Doe"], "John Doe", True),  # Exact match (including caps)
         (["jOHn dOe"], "John Doe", True),  # CApitalisation mismatch
     ],
@@ -77,6 +81,10 @@ def test_get_filtered_commits__directory_filter(mock_repo, directories, file_pat
     else:
         assert len(results) == 0
 
+# ====================================================
+# Tests for: fetch_file_paths_tracked_by_git()
+# ====================================================
+
 
 @pytest.mark.parametrize(
     "pattern, directories, expected_result",
@@ -92,6 +100,11 @@ def test_fetch_file_paths_tracked_by_git(mock_repo, pattern, directories, expect
 
     result = fetch_file_paths_tracked_by_git(pattern, directories)
     assert result == expected_result
+
+
+# ====================================================
+# Tests for: fetch_file_gitblame()
+# ====================================================
 
 
 def test_fetch_file_gitblame__success(mock_repo):
