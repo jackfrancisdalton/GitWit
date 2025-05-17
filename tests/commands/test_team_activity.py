@@ -36,7 +36,9 @@ def repo_mock(monkeypatch):
 
         def iter_commits(self, since=None, until=None, author=None):
             since_ts = datetime.fromisoformat(since).timestamp() if since else 0
-            until_ts = datetime.fromisoformat(until).timestamp() if until else float("inf")
+            until_ts = (
+                datetime.fromisoformat(until).timestamp() if until else float("inf")
+            )
 
             filtered_commits = [
                 c
@@ -47,7 +49,9 @@ def repo_mock(monkeypatch):
             return iter(filtered_commits)
 
     def mock_repo(commits):
-        monkeypatch.setattr(team_activity, "Repo", lambda *_args, **_kwargs: RepoMock(commits))
+        monkeypatch.setattr(
+            team_activity, "Repo", lambda *_args, **_kwargs: RepoMock(commits)
+        )
 
     return mock_repo
 

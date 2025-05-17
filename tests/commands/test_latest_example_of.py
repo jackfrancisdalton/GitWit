@@ -99,7 +99,9 @@ def test_hydrate_examples_and_filter_based_on_git_data__no_filter(patch_repo_log
     )
     patch_repo_log(raw)
 
-    examples = latest._hydrate_examples_and_filter_based_on_git_data(["foo.py", "bar.py"], None)
+    examples = latest._hydrate_examples_and_filter_based_on_git_data(
+        ["foo.py", "bar.py"], None
+    )
 
     assert len(examples) == 2
     assert examples[0].path == "foo.py"
@@ -121,7 +123,9 @@ def test_hydrate_examples_and_filter_based_on_git_data__author_filter_exact_matc
     )
     patch_repo_log(raw)
 
-    examples = latest._hydrate_examples_and_filter_based_on_git_data(["foo.py", "bar.py"], ["Dave"])
+    examples = latest._hydrate_examples_and_filter_based_on_git_data(
+        ["foo.py", "bar.py"], ["Dave"]
+    )
 
     assert len(examples) == 1
     assert examples[0].path == "bar.py"

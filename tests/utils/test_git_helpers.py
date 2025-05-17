@@ -39,7 +39,9 @@ def mock_repo():
         (["jOHn dOe"], "John Doe", True),  # CApitalisation mismatch
     ],
 )
-def test_get_filtered_commits__author_filter(mock_repo, authors, commit_author, expected_match):
+def test_get_filtered_commits__author_filter(
+    mock_repo, authors, commit_author, expected_match
+):
     commit = MagicMock(spec=Commit)
     commit.author.name = commit_author
     mock_repo.iter_commits.return_value = [commit]
@@ -66,7 +68,9 @@ def test_get_filtered_commits__author_filter(mock_repo, authors, commit_author, 
         (["src"], ["lib/file.py"], False),
     ],
 )
-def test_get_filtered_commits__directory_filter(mock_repo, directories, file_paths, expected_match):
+def test_get_filtered_commits__directory_filter(
+    mock_repo, directories, file_paths, expected_match
+):
     commit = MagicMock(spec=Commit)
     commit.stats.files = {f: {} for f in file_paths}
     mock_repo.iter_commits.return_value = [commit]
@@ -97,7 +101,9 @@ def test_get_filtered_commits__directory_filter(mock_repo, directories, file_pat
         ("nonexistent", [], []),
     ],
 )
-def test_fetch_file_paths_tracked_by_git(mock_repo, pattern, directories, expected_result):
+def test_fetch_file_paths_tracked_by_git(
+    mock_repo, pattern, directories, expected_result
+):
     mock_repo.git.ls_files.return_value = "src/main.py\ntests/test_main.py\nREADME.md"
 
     result = fetch_file_paths_tracked_by_git(pattern, directories)

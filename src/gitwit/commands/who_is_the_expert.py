@@ -21,7 +21,9 @@ class AuthorActivityData:
 
 
 console = ConsoleSingleton.get_console()
-app = typer.Typer(name="blame_expert", help="Determine file or directory experts via git blame.")
+app = typer.Typer(
+    name="blame_expert", help="Determine file or directory experts via git blame."
+)
 
 
 def command(
@@ -81,7 +83,8 @@ def _gather_blame_entries(repo: Repo, target: Path) -> list[BlameLine]:
         max_workers = min(8, len(files_to_process))
         with ThreadPoolExecutor(max_workers=max_workers) as pool:
             futures = {
-                pool.submit(fetch_file_gitblame, repo, path): path for path in files_to_process
+                pool.submit(fetch_file_gitblame, repo, path): path
+                for path in files_to_process
             }
 
             for future in as_completed(futures):
@@ -124,13 +127,17 @@ def _compute_author_activity(blame_list) -> list[AuthorActivityData]:
     return list(data.values())
 
 
-def _generate_table(target: Path, authors: list[AuthorActivityData], num_results: int) -> Table:
+def _generate_table(
+    target: Path, authors: list[AuthorActivityData], num_results: int
+) -> Table:
     """
     Generate a Rich Table summarizing author activity.
     """
 
     total_lines = sum(a.line_count for a in authors)
-    table = Table(title=f"Experts for {target}, showing top {num_results} of {len(authors)}")
+    table = Table(
+        title=f"Experts for {target}, showing top {num_results} of {len(authors)}"
+    )
     table.add_column("Author", style="magenta")
     table.add_column("Lines", justify="right", style="cyan")
     table.add_column("Ownership %", justify="right", style="green")

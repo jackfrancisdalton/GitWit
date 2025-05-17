@@ -60,7 +60,9 @@ def create_commit(insertions, deletions, files, message):
         ),
         # Combination: risky lines and sensitive keyword
         (
-            create_commit(RiskConfig.LINES_CHANGED_THRESHOLD, 0, 1, "Security improvements"),
+            create_commit(
+                RiskConfig.LINES_CHANGED_THRESHOLD, 0, 1, "Security improvements"
+            ),
             5,
             ["Large number of lines changed", "Sensitive keyword in commit message"],
         ),

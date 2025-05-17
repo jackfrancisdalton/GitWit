@@ -84,13 +84,15 @@ def test_command_dir_success(tmp_dir, monkeypatch, capsys):
     monkeypatch.setattr(
         Git,
         "ls_files",
-        lambda self, path: "\n".join([
-            str(Path(path) / "f1.py"),
-            str(Path(path) / "f2.py"),
-        ]),
-        raising=False
+        lambda self, path: "\n".join(
+            [
+                str(Path(path) / "f1.py"),
+                str(Path(path) / "f2.py"),
+            ]
+        ),
+        raising=False,
     )
-    
+
     # Simulate each file returning a single blame entry with author as filename
     def fake_blame(repo, path):
         name = Path(path).name
@@ -135,11 +137,13 @@ def test_gather_blame_entries__dir(tmp_dir, monkeypatch):
     monkeypatch.setattr(
         Git,
         "ls_files",
-        lambda self, path: "\n".join([
-            str(Path(path) / "f1.py"),
-            str(Path(path) / "f2.py"),
-        ]),
-        raising=False
+        lambda self, path: "\n".join(
+            [
+                str(Path(path) / "f1.py"),
+                str(Path(path) / "f2.py"),
+            ]
+        ),
+        raising=False,
     )
     # Arrange
     b1 = DummyBlame("X", 10, "m1", 1)

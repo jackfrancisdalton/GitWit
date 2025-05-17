@@ -50,7 +50,9 @@ class Node:
 
 
 def command(
-    since: str = typer.Option(..., "--since", "-s", help="Start date in YYYY-MM-DD format"),
+    since: str = typer.Option(
+        ..., "--since", "-s", help="Start date in YYYY-MM-DD format"
+    ),
     until: str = typer.Option(
         ..., "--until", "-u", help="End date in YYYY-MM-DD format(defaults to now)"
     ),
@@ -60,14 +62,18 @@ def command(
     authors: Optional[List[str]] = typer.Option(
         None, "--author", "-a", help="Filter commits to these authors"
     ),
-    limit: int = typer.Option(10, "--limit", "-n", help="Maximum number of hot zones to show"),
+    limit: int = typer.Option(
+        10, "--limit", "-n", help="Maximum number of hot zones to show"
+    ),
 ):
     """
     Show the most active directories in the repository between two dates.
     """
 
     since_datetime, until_datetime = handle_since_until_arguments(since, until)
-    entries = _collect_file_commit_entries(since_datetime, until_datetime, directories, authors)
+    entries = _collect_file_commit_entries(
+        since_datetime, until_datetime, directories, authors
+    )
 
     if not entries:
         return []
