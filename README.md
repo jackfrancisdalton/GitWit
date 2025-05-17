@@ -55,7 +55,7 @@ Scans the git repo history for a given time period and calculates the activity o
 
 
 #### Exmaple Output
-<img src="./readme-resources/show_team_activity.png" alt="Example Output of Show Team Activity" height="500">
+<img src="./readme-resources/show_team_activity.png" alt="Example Output of Show Team Activity" width="800">
 
 
 
@@ -70,7 +70,7 @@ Scans the git repo history for a given time period and calculates the most activ
 - `--until`: the end date of the scan data (in `YYY-MM-DD` format) 
 
 #### Exmaple Output
-<img src="./readme-resources/show_activity.png" alt="Example Output of Show Activity" height="400">
+<img src="./readme-resources/show_activity.png" alt="Example Output of Show Activity" width="800">
 
 
 
@@ -86,7 +86,7 @@ Scans the git blame data in a file or an entire directory you specify, and deter
 
 
 #### Exmaple Output
-<img src="./readme-resources/who_the_expert.png" alt="Example Output of Who is the Expert" height="400">
+<img src="./readme-resources/who_the_expert.png" alt="Example Output of Who is the Expert" width="800">
 
 
 
@@ -101,7 +101,7 @@ Scans the git repo history for content considered risky, such as commits with ma
 
 
 #### Exmaple Output
-<img src="./readme-resources/risky_commits.png" alt="Example Output of Risky Commits" height="400">
+<img src="./readme-resources/risky_commits.png" alt="Example Output of Risky Commits" width="800">
 
 
 
@@ -118,7 +118,7 @@ Scans git repo to identify the latest example of a given file for example "contr
 - `--limit`: limits the number of example files returned
 
 #### Exmaple Output
-<img src="./readme-resources/latest_example_of.png" alt="Example Output of Team Activity" height="400">
+<img src="./readme-resources/latest_example_of.png" alt="Example Output of Team Activity" width="800">
 
 
 
@@ -137,10 +137,11 @@ Scans git repo for the hotest zones of activity where hotness is the most commit
 - `--limit`: limits the number of example files returned
 
 #### Exmaple Output
-<img src="./readme-resources/hot_zones.png" alt="Example Output of Hot Zones" height="400">
+<img src="./readme-resources/hot_zones.png" alt="Example Output of Hot Zones" width="800">
 
 
 
-# Work In Progress: 
-- add loading bars to all commands
-- assess areas for optimisation
+# Future Development: 
+- Move away from GitPython and use native git cli functions to avoid excessive hydration of git data
+- Introduce a CSV export option on all methods
+- 

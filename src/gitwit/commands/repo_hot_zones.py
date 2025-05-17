@@ -1,14 +1,14 @@
 import typer
-from typing import List, Optional, Tuple
+from typing import List, Optional
 from datetime import datetime, timezone
 from dataclasses import dataclass
 from rich.table import Table
 from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn
 
 from gitwit.utils.console_singleton import ConsoleSingleton
-from gitwit.utils.date_utils import convert_to_datetime
 from gitwit.utils.human_readable_helpers import humanise_timedelta
 from gitwit.utils.git_helpers import get_filtered_commits
+from gitwit.utils.typer_helpers import handle_since_until_arguments
 
 console = ConsoleSingleton.get_console()
 
@@ -50,7 +50,9 @@ class Node:
 
 
 def command(
-    since: str = typer.Option(..., "--since", "-s", help="Start date in YYYY-MM-DD format"),
+    since: str = typer.Option(
+        ..., "--since", "-s", help="Start date in YYYY-MM-DD format"
+    ),
     until: str = typer.Option(
         ..., "--until", "-u", help="End date in YYYY-MM-DD format(defaults to now)"
     ),
@@ -60,14 +62,18 @@ def command(
     authors: Optional[List[str]] = typer.Option(
         None, "--author", "-a", help="Filter commits to these authors"
     ),
-    limit: int = typer.Option(10, "--limit", "-n", help="Maximum number of hot zones to show"),
+    limit: int = typer.Option(
+        10, "--limit", "-n", help="Maximum number of hot zones to show"
+    ),
 ):
     """
     Show the most active directories in the repository between two dates.
     """
 
-    since_datetime, until_datetime = _handle_date_arguments(since, until)
-    entries = _collect_file_commit_entries(since_datetime, until_datetime, directories, authors)
+    since_datetime, until_datetime = handle_since_until_arguments(since, until)
+    entries = _collect_file_commit_entries(
+        since_datetime, until_datetime, directories, authors
+    )
 
     if not entries:
         return []
@@ -83,21 +89,6 @@ def command(
         console.print(table)
     else:
         console.print(f"[yellow]No activity between {since} and {until}.[/yellow]")
-
-
-def _handle_date_arguments(since: str, until: str) -> Tuple[datetime, datetime]:
-    try:
-        since_datetime = convert_to_datetime(since)
-        until_datetime = convert_to_datetime(until)
-    except ValueError:
-        console.print("[red]Invalid date format. Use YYYY-MM-DD.[/red]")
-        raise typer.Exit(1)
-
-    if since_datetime > until_datetime:
-        console.print("[red]Start date cannot be after end date.[/red]")
-        raise typer.Exit(1)
-
-    return since_datetime, until_datetime
 
 
 def _collect_file_commit_entries(

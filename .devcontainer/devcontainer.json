@@ -35,7 +35,7 @@
 			}
 		}
 	},
-	"postCreateCommand": "bash .devcontainer/add-cli-alias-to-path.sh",
+	"postCreateCommand": "uv venv && uv pip install -r requirements.txt && pip install -e . && bash .devcontainer/add-cli-alias-to-path.sh",
 	"containerEnv": {
 		"PYTHONPATH": "/workspaces/GitWit/src:${PYTHONPATH}"
 	}

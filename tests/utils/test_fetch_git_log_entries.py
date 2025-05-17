@@ -15,26 +15,26 @@ def mock_repo():
 
 def test_fetch_git_log_entries__commit_with_multiple_files(mock_repo):
     mock_repo.git.log.return_value = (
-        "abc123\x002023-01-01T12:00:00Z\x00John Doe\n" "file1.txt\n" "file2.txt\n"
+        "hash1\x002023-01-01T12:00:00Z\x00Rand al'Thor\n" "file1.txt\n" "file2.txt\n"
     )
 
     result = fetch_git_log_entries_of_added_files()
 
     assert len(result) == 1
     assert result[0] == GitLogEntry(
-        commit_hash="abc123",
+        commit_hash="hash1",
         created_at_iso="2023-01-01T12:00:00Z",
-        author="John Doe",
+        author="Rand al'Thor",
         files=["file1.txt", "file2.txt"],
     )
 
 
 def test_fetch_git_log_entries__multiple_commits(mock_repo):
     mock_repo.git.log.return_value = (
-        "abc123\x002023-01-01T12:00:00Z\x00John Doe\n"
+        "hash1\x002023-01-01T12:00:00Z\x00Moiraine Damodred\n"
         "file1.txt\n"
         "file2.txt\n"
-        "def456\x002023-01-02T13:00:00Z\x00Jane Smith\n"
+        "hash2\x002023-01-02T13:00:00Z\x00al'Lan Mandragoran\n"
         "file3.txt\n"
     )
 
@@ -42,29 +42,29 @@ def test_fetch_git_log_entries__multiple_commits(mock_repo):
 
     assert len(result) == 2
     assert result[0] == GitLogEntry(
-        commit_hash="abc123",
+        commit_hash="hash1",
         created_at_iso="2023-01-01T12:00:00Z",
-        author="John Doe",
+        author="Moiraine Damodred",
         files=["file1.txt", "file2.txt"],
     )
     assert result[1] == GitLogEntry(
-        commit_hash="def456",
+        commit_hash="hash2",
         created_at_iso="2023-01-02T13:00:00Z",
-        author="Jane Smith",
+        author="al'Lan Mandragoran",
         files=["file3.txt"],
     )
 
 
 def test_fetch_git_log__commit_with_no_files(mock_repo):
-    mock_repo.git.log.return_value = "abc123\x002023-01-01T12:00:00Z\x00John Doe\n"
+    mock_repo.git.log.return_value = "hash1\x002023-01-01T12:00:00Z\x00Mat Cauthon\n"
 
     result = fetch_git_log_entries_of_added_files()
 
     assert len(result) == 1
     assert result[0] == GitLogEntry(
-        commit_hash="abc123",
+        commit_hash="hash1",
         created_at_iso="2023-01-01T12:00:00Z",
-        author="John Doe",
+        author="Mat Cauthon",
         files=[],
     )
 

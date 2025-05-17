@@ -6,19 +6,19 @@ from gitwit.utils.date_utils import convert_to_datetime
 @pytest.mark.parametrize(
     "date_str, expected",
     [
-        ("2023-10-01", datetime(2023, 10, 1, tzinfo=timezone.utc)),  # Date onl
+        ("2023-10-01", datetime(2023, 10, 1, tzinfo=timezone.utc)),  # Date only
         (
-            "2023-10-01T12:00:00",
+            "2023-10-01T12:00:00",  # Date and time
             datetime(2023, 10, 1, 12, 0, tzinfo=timezone.utc),
-        ),  # Date and time
+        ),
         (
-            "2023-10-01T12:00:00Z",
+            "2023-10-01T12:00:00Z",  # Date and time with Zulu time
             datetime(2023, 10, 1, 12, 0, tzinfo=timezone.utc),
-        ),  # Date and time with Zulu time
+        ),
         (
-            "2023-10-01T12:00:00+02:00",
+            "2023-10-01T12:00:00+02:00",  # Date and time with timezone offset
             datetime(2023, 10, 1, 10, 0, tzinfo=timezone.utc),
-        ),  # Date and time with timezone offset
+        ),
     ],
 )
 def test_convert_to_datetime__valid_cases(date_str, expected):
