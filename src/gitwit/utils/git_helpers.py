@@ -9,6 +9,13 @@ from gitwit.models.blame_line import BlameLine
 from gitwit.utils.repo_singleton import RepoSingleton
 
 
+def count_commits(since: datetime, until: datetime) -> int:
+    repo = RepoSingleton.get_repo()
+    return int(
+        repo.git.rev_list("--count", f"--since={since.isoformat()}", f"--until={until.isoformat()}")
+    )
+
+
 def get_filtered_commits(
     since: datetime,
     until: datetime,
@@ -89,10 +96,8 @@ def fetch_file_gitblame(repo: Repo, file_path: Path) -> List[BlameLine]:
     try:
         raw_blame_info = repo.git.blame("--line-porcelain", str(file_path)).splitlines()
         blame_list = _parse_porcelain_blame(raw_blame_info)
-    except Exception as e:
-        raise BlameFetchError(
-            f"failed to fetch or parse blame for {file_path} with error {e}"
-        ) from e
+    except Exception:
+        raise BlameFetchError("failed to fetch or parse blame")
 
     return blame_list
 
@@ -133,6 +138,7 @@ def _parse_porcelain_blame(blame_lines_str: List[str]) -> List[BlameLine]:
             key = key.replace("-", "_")
             if key in ("author_time", "committer_time"):
                 val = int(val)
+
             current[key] = val
             continue
 

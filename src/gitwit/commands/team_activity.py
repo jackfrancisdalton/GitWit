@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import List, Tuple
+from typing import List
 import typer
 from git import Repo
 from rich.table import Table
@@ -13,7 +13,7 @@ from rich.progress import (
 )
 
 from gitwit.utils.console_singleton import ConsoleSingleton
-from gitwit.utils.date_utils import convert_to_datetime
+from gitwit.utils.typer_helpers import handle_since_until_arguments
 
 
 @dataclass
@@ -38,35 +38,14 @@ def command(
     Show developer activity summary between two dates.
     """
 
-    since_datetime, until_datetime = _handle_date_arguments(since, until)
-
-    if since_datetime > until_datetime:
-        console.print("[red]Start date cannot be after end date.[/red]")
-        raise typer.Exit(1)
-
+    since_datetime, until_datetime = handle_since_until_arguments(since, until)
     developer_activities = _fetch_developer_activities(since_datetime, until_datetime)
     table = _generate_activity_table(developer_activities)
 
     console.print(table)
 
 
-def _handle_date_arguments(since: str, until: str) -> Tuple[datetime, datetime]:
-    try:
-        since_datetime = convert_to_datetime(since)
-        until_datetime = convert_to_datetime(until)
-    except ValueError:
-        console.print("[red]Invalid date format. Use YYYY-MM-DD.[/red]")
-        raise typer.Exit(1)
-
-    if since_datetime > until_datetime:
-        console.print("[red]Start date cannot be after end date.[/red]")
-        raise typer.Exit(1)
-
-    return since_datetime, until_datetime
-
-
 def _fetch_developer_activities(since_datetime: datetime, until_datetime: datetime):
-    # TODO: refactor to use helper method
     repo = Repo(".", search_parent_directories=True)
     commits = list(
         repo.iter_commits(since=since_datetime.isoformat(), until=until_datetime.isoformat())

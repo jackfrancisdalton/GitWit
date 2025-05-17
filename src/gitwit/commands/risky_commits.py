@@ -6,8 +6,8 @@ from git import Commit
 from rich.table import Table
 
 from gitwit.utils.console_singleton import ConsoleSingleton
-from gitwit.utils.date_utils import convert_to_datetime
 from gitwit.utils.git_helpers import get_filtered_commits
+from gitwit.utils.typer_helpers import handle_since_until_arguments
 
 
 @dataclass
@@ -23,20 +23,24 @@ class RiskyCommit:
     risk_factors: List[RiskFactor] = field(default_factory=list)
 
 
-console = ConsoleSingleton.get_console()
+@dataclass(frozen=True)
+class RiskConfig:
+    KEYWORDS: Tuple[str, ...] = (
+        "password",
+        "refactor",
+        "security",
+        "key",
+        "secret",
+        "credentials",
+        "fixme",
+        "todo",
+    )
+    LINES_CHANGED_THRESHOLD: int = 500
+    FILES_CHANGED_THRESHOLD: int = 10
 
-KEYWORDS = [
-    "password",
-    "refactor",
-    "security",
-    "key",
-    "secret",
-    "credentials",
-    "fixme",
-    "todo",
-]
-LINES_CHANGED_THRESHOLD = 500
-FILES_CHANGED_THRESHOLD = 10
+
+RISK_CONFIG = RiskConfig()
+console = ConsoleSingleton.get_console()
 
 
 def command(
@@ -47,7 +51,7 @@ def command(
     Identify risky commits in the repository in a given date range.
     """
 
-    since_date, until_date = _handle_date_arguments(since, until)
+    since_date, until_date = handle_since_until_arguments(since, until)
     risky_commits = _identify_risky_commits(since_date, until_date)
 
     if not risky_commits:
@@ -56,21 +60,6 @@ def command(
 
     table = _generate_risky_commits_table(risky_commits)
     console.print(table)
-
-
-def _handle_date_arguments(since: str, until: str) -> Tuple[datetime, datetime]:
-    try:
-        since_datetime = convert_to_datetime(since)
-        until_datetime = convert_to_datetime(until)
-    except ValueError:
-        console.print("[red]Invalid date format. Use YYYY-MM-DD.[/red]")
-        raise typer.Exit(1)
-
-    if since_datetime > until_datetime:
-        console.print("[red]Start date cannot be after end date.[/red]")
-        raise typer.Exit(1)
-
-    return since_datetime, until_datetime
 
 
 def _identify_risky_commits(since: datetime, until: datetime) -> List[RiskyCommit]:
@@ -105,7 +94,7 @@ def _identify_risky_commits(since: datetime, until: datetime) -> List[RiskyCommi
 
 
 def _assess_lines_changed(total_lines_changed: int, risk_factors: List[RiskFactor]) -> int:
-    if total_lines_changed >= LINES_CHANGED_THRESHOLD:
+    if total_lines_changed >= RISK_CONFIG.LINES_CHANGED_THRESHOLD:
         risk_factors.append(
             RiskFactor(
                 description="Large number of lines changed",
@@ -117,7 +106,7 @@ def _assess_lines_changed(total_lines_changed: int, risk_factors: List[RiskFacto
 
 
 def _assess_files_changed(files_changed: int, risk_factors: List[RiskFactor]) -> int:
-    if files_changed >= FILES_CHANGED_THRESHOLD:
+    if files_changed >= RISK_CONFIG.FILES_CHANGED_THRESHOLD:
         risk_factors.append(
             RiskFactor(
                 description="Many files modified",
@@ -131,7 +120,7 @@ def _assess_files_changed(files_changed: int, risk_factors: List[RiskFactor]) ->
 def _assess_keywords(message: str, risk_factors: List[RiskFactor]) -> int:
     lower_msg = message.lower()
     score = 0
-    for keyword in KEYWORDS:
+    for keyword in RISK_CONFIG.KEYWORDS:
         if keyword in lower_msg:
             risk_factors.append(
                 RiskFactor(

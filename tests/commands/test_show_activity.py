@@ -37,6 +37,11 @@ def commit_data():
     }
 
 
+# ====================================================
+# Tests for: _compute_file_statistics()
+# ====================================================
+
+
 @pytest.mark.parametrize(
     "commit_keys, expected_commit_count, expected_lines",
     [
@@ -66,6 +71,11 @@ def test_compute_file_statistics_cases(
     # Per-file lines mapping
     result_map = {fs.file: fs.lines for fs in stats_list}
     assert result_map == expected_lines
+
+
+# ====================================================
+# Tests for: _compute_author_activity_statistics()
+# ====================================================
 
 
 @pytest.mark.parametrize(

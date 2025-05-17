@@ -1,7 +1,7 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import List
 import typer
 from git import Repo
 from rich.table import Table
@@ -48,39 +48,52 @@ def command(
         console.print("[yellow]No blame data found for path.[/yellow]")
         raise typer.Exit()
 
-    authors = _compute_author_activity(blame_entries)
-    table = _generate_table(target, authors, num_results)
+    authors_activity_list = _compute_author_activity(blame_entries)
+    table = _generate_table(target, authors_activity_list, num_results)
+
     console.print(table)
 
 
 # TODO: this need to be improved to ignore untracked directories
-def _gather_blame_entries(repo: Repo, target: Path) -> List[BlameLine]:
+def _gather_blame_entries(repo: Repo, target: Path) -> list[BlameLine]:
     """
-    Return a combined list of blame entries for a file or all files under a directory.
+    Return a combined list of BlameLine entries for a file or all files under a directory,
+    fetching each in parallel with a progress bar.
     """
-    entries = []
 
-    # Build list of files to process
     if target.is_dir():
-        files_to_process = [file for file in target.rglob("*") if file.is_file()]
+        files_to_process = repo.git.ls_files(str(target)).splitlines()
     else:
-        files_to_process = [target]
+        files_to_process = [str(target)]
 
-    # Show progress while fetching blame
+    entries: list[BlameLine] = []
+
+    # 2) Kick off parallel fetches and track progress
     with Progress(
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
-        TextColumn("{task.completed}/{task.total} files"),
         TimeElapsedColumn(),
         console=console,
     ) as progress:
         task = progress.add_task("Fetching blame entries", total=len(files_to_process))
-        for file in files_to_process:
-            try:
-                entries.extend(fetch_file_gitblame(repo, file))
-            except Exception:
-                pass
-            progress.advance(task)
+
+        # cap workers to number of files
+        max_workers = min(8, len(files_to_process))
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            futures = {
+                pool.submit(fetch_file_gitblame, repo, path): path for path in files_to_process
+            }
+
+            for future in as_completed(futures):
+                path = futures[future]
+
+                try:
+                    result = future.result()  # List[BlameLine]
+                    entries.extend(result)
+                except Exception as e:
+                    console.log(f"Blame failed for {path}: {e}", style="yellow")
+                finally:
+                    progress.advance(task)
 
     return entries
 
@@ -115,8 +128,9 @@ def _generate_table(target: Path, authors: list[AuthorActivityData], num_results
     """
     Generate a Rich Table summarizing author activity.
     """
+
     total_lines = sum(a.line_count for a in authors)
-    table = Table(title=f"Blame Summary for {target}")
+    table = Table(title=f"Experts for {target}, showing top {num_results} of {len(authors)}")
     table.add_column("Author", style="magenta")
     table.add_column("Lines", justify="right", style="cyan")
     table.add_column("Ownership %", justify="right", style="green")
@@ -124,6 +138,7 @@ def _generate_table(target: Path, authors: list[AuthorActivityData], num_results
     table.add_column("Last Commit Message", style="yellow")
 
     top = sorted(authors, key=lambda a: a.line_count, reverse=True)[:num_results]
+
     for a in top:
         pct = f"{(a.line_count / total_lines * 100):.1f}%" if total_lines else "0.0%"
         last = a.last_commit_date.isoformat(sep=" ")

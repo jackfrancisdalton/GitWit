@@ -1,7 +1,7 @@
 """Enhanced Git activity report between two dates."""
 
 from dataclasses import dataclass, field
-from typing import List, Sequence, Dict, Tuple
+from typing import List, Sequence, Dict
 from git import Commit
 from rich.table import Table
 from collections import Counter
@@ -15,9 +15,9 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
-from gitwit.utils.date_utils import convert_to_datetime
 from gitwit.utils.console_singleton import ConsoleSingleton
 from gitwit.utils.git_helpers import get_filtered_commits
+from gitwit.utils.typer_helpers import handle_since_until_arguments
 
 console = ConsoleSingleton.get_console()
 
@@ -54,7 +54,7 @@ def command(
     Show commit activity statistics between two dates.
     """
 
-    since_date, until_date = _handle_date_arguments(since, until)
+    since_date, until_date = handle_since_until_arguments(since, until)
 
     commits = list(
         get_filtered_commits(
@@ -81,21 +81,6 @@ def command(
 
     console.print(file_stats_table)
     console.print(activity_summary_table)
-
-
-def _handle_date_arguments(since: str, until: str) -> Tuple[datetime, datetime]:
-    try:
-        since_datetime = convert_to_datetime(since)
-        until_datetime = convert_to_datetime(until)
-    except ValueError:
-        console.print("[red]Invalid date format. Use YYYY-MM-DD.[/red]")
-        raise typer.Exit(1)
-
-    if since_datetime > until_datetime:
-        console.print("[red]Start date cannot be after end date.[/red]")
-        raise typer.Exit(1)
-
-    return since_datetime, until_datetime
 
 
 # ================================================================================

@@ -35,7 +35,9 @@ def make_iso(days_delta: int, hours: int = 0):
     return dt.isoformat()
 
 
-# ===== _generate_entries tests =====
+# ====================================================
+# Tests for: _collect_file_commit_entries()
+# ====================================================
 
 
 def test_generate_entries__empty():
@@ -46,7 +48,9 @@ def test_generate_entries__empty():
     assert entries == []
 
 
-# ===== _generate_file_tree + compression + calculate tests =====
+# ====================================================
+# Tests for:  _generate_file_tree + compression + calculate tests()
+# ====================================================
 
 
 def test_file_tree__empty():

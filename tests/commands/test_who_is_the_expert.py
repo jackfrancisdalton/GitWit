@@ -1,5 +1,7 @@
 import pytest
 from datetime import datetime
+from pathlib import Path
+from git.cmd import Git
 from typer import Exit as TyperExit
 
 import gitwit.commands.who_is_the_expert as file_expert
@@ -28,14 +30,19 @@ def tmp_file(tmp_path):
 def tmp_dir(tmp_path):
     d = tmp_path / "test_dir"
     d.mkdir()
+
     f1 = d / "f1.py"
     f2 = d / "f2.py"
+
     f1.write_text("# file1")
     f2.write_text("# file2")
+
     return d
 
 
-# --- Tests for the command function ---
+# ====================================================
+# Tests for: command()
+# ====================================================
 
 
 def test_command_file_not_exists(tmp_path):
@@ -73,9 +80,22 @@ def test_command_file_success(tmp_file, monkeypatch, capsys):
 
 
 def test_command_dir_success(tmp_dir, monkeypatch, capsys):
+    # Monkeypatch git ls-files to return our test files
+    monkeypatch.setattr(
+        Git,
+        "ls_files",
+        lambda self, path: "\n".join(
+            [
+                str(Path(path) / "f1.py"),
+                str(Path(path) / "f2.py"),
+            ]
+        ),
+        raising=False,
+    )
+
     # Simulate each file returning a single blame entry with author as filename
     def fake_blame(repo, path):
-        name = path.name
+        name = Path(path).name
         return [DummyBlame(name, 50, f"edit {name}", 1)]
 
     monkeypatch.setattr(file_expert, "fetch_file_gitblame", fake_blame)
@@ -88,7 +108,9 @@ def test_command_dir_success(tmp_dir, monkeypatch, capsys):
     assert "f2.py" in out
 
 
-# --- Tests for helper functions ---
+# ====================================================
+# Tests for: _gather_blame_entries()
+# ====================================================
 
 
 def test_gather_blame_entries__file(tmp_file, monkeypatch):
@@ -96,7 +118,8 @@ def test_gather_blame_entries__file(tmp_file, monkeypatch):
     bm = DummyBlame("A", 123, "msg", 2)
 
     def fake(repo, path):
-        assert path == tmp_file
+        # Now path may be a string; convert to Path for comparison
+        assert Path(path) == tmp_file
         return [bm]
 
     monkeypatch.setattr(file_expert, "fetch_file_gitblame", fake)
@@ -110,14 +133,27 @@ def test_gather_blame_entries__file(tmp_file, monkeypatch):
 
 
 def test_gather_blame_entries__dir(tmp_dir, monkeypatch):
+    # Monkeypatch git ls-files to return our test files
+    monkeypatch.setattr(
+        Git,
+        "ls_files",
+        lambda self, path: "\n".join(
+            [
+                str(Path(path) / "f1.py"),
+                str(Path(path) / "f2.py"),
+            ]
+        ),
+        raising=False,
+    )
     # Arrange
     b1 = DummyBlame("X", 10, "m1", 1)
     b2 = DummyBlame("Y", 20, "m2", 2)
 
     def fake(repo, path):
-        if path.name == "f1.py":
+        name = Path(path).name
+        if name == "f1.py":
             return [b1]
-        elif path.name == "f2.py":
+        elif name == "f2.py":
             return [b2]
         return []
 
@@ -131,6 +167,11 @@ def test_gather_blame_entries__dir(tmp_dir, monkeypatch):
     assert len(entries) == 2
     assert b1 in entries
     assert b2 in entries
+
+
+# ====================================================
+# Tests for: _compute_author_activity()
+# ====================================================
 
 
 def test_compute_author_activity__empty():
