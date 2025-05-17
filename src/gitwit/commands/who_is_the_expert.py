@@ -9,7 +9,7 @@ from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn
 
 from gitwit.models.blame_line import BlameLine
 from gitwit.utils.console_singleton import ConsoleSingleton
-from gitwit.utils.git_helpers import BlameFetchError, fetch_file_gitblame
+from gitwit.utils.git_helpers import fetch_file_gitblame
 
 
 @dataclass
