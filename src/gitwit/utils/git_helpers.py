@@ -11,7 +11,12 @@ from gitwit.utils.repo_singleton import RepoSingleton
 
 def count_commits(since: datetime, until: datetime) -> int:
     repo = RepoSingleton.get_repo()
-    return int(repo.git.rev_list("--count", f"--since={since.isoformat()}", f"--until={until.isoformat()}"))
+    return int(
+        repo.git.rev_list(
+            "--count", f"--since={since.isoformat()}", f"--until={until.isoformat()}"
+        )
+    )
+
 
 def get_filtered_commits(
     since: datetime,
@@ -27,11 +32,15 @@ def get_filtered_commits(
     repo = RepoSingleton.get_repo()
 
     for commit in repo.iter_commits(since=since.isoformat(), until=until.isoformat()):
-        if authors and not any(a.lower() in commit.author.name.lower() for a in authors):
+        if authors and not any(
+            a.lower() in commit.author.name.lower() for a in authors
+        ):
             continue
 
         if directories and not any(
-            str(f).startswith(d.rstrip("/") + "/") for f in commit.stats.files for d in directories
+            str(f).startswith(d.rstrip("/") + "/")
+            for f in commit.stats.files
+            for d in directories
         ):
             continue
         yield commit
@@ -75,7 +84,9 @@ def fetch_file_paths_tracked_by_git(search_term: str, directories) -> List[str]:
 
     if directories:
         dirs = [d.rstrip("/") + "/" for d in directories]
-        matching_files = [f for f in matching_files if any(f.startswith(d) for d in dirs)]
+        matching_files = [
+            f for f in matching_files if any(f.startswith(d) for d in dirs)
+        ]
 
     return matching_files
 
@@ -90,10 +101,10 @@ HEX_SHA = re.compile(r"^[0-9a-f]{7,40}$")
 def fetch_file_gitblame(repo: Repo, file_path: Path) -> List[BlameLine]:
     repo = RepoSingleton.get_repo()
 
-    try: 
+    try:
         raw_blame_info = repo.git.blame("--line-porcelain", str(file_path)).splitlines()
         blame_list = _parse_porcelain_blame(raw_blame_info)
-    except Exception as e: 
+    except Exception as e:
         raise BlameFetchError("failed to fetch or parse blame")
 
     return blame_list

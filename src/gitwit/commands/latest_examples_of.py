@@ -30,7 +30,9 @@ def command(
     authors: Optional[List[str]] = typer.Option(
         None, "--author", "-a", help="Filter examples to commits by these authors"
     ),
-    limit: int = typer.Option(10, "--limit", "-n", help="Maximum number of examples to show"),
+    limit: int = typer.Option(
+        10, "--limit", "-n", help="Maximum number of examples to show"
+    ),
 ):
     """
     Find the latest examples of files matching a search term in the git history.

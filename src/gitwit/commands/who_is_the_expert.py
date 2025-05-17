@@ -21,7 +21,9 @@ class AuthorActivityData:
 
 
 console = ConsoleSingleton.get_console()
-app = typer.Typer(name="blame_expert", help="Determine file or directory experts via git blame.")
+app = typer.Typer(
+    name="blame_expert", help="Determine file or directory experts via git blame."
+)
 
 
 def command(
@@ -52,7 +54,6 @@ def command(
     table = _generate_table(target, authors_activity_list, num_results)
 
     console.print(table)
-    
 
 
 # TODO: this need to be improved to ignore untracked directories
@@ -62,8 +63,6 @@ def _gather_blame_entries(repo: Repo, target: Path) -> list[BlameLine]:
     fetching each in parallel with a progress bar.
     """
 
- 
-
     if target.is_dir():
         files_to_process = repo.git.ls_files(str(target)).splitlines()
     else:
@@ -71,7 +70,7 @@ def _gather_blame_entries(repo: Repo, target: Path) -> list[BlameLine]:
 
     entries: list[BlameLine] = []
 
-# 2) Kick off parallel fetches and track progress
+    # 2) Kick off parallel fetches and track progress
     with Progress(
         TextColumn("[progress.description]{task.description}"),
         BarColumn(),
@@ -90,7 +89,7 @@ def _gather_blame_entries(repo: Repo, target: Path) -> list[BlameLine]:
 
             for future in as_completed(futures):
                 path = futures[future]
-                
+
                 try:
                     result = future.result()  # List[BlameLine]
                     entries.extend(result)
@@ -128,13 +127,17 @@ def _compute_author_activity(blame_list) -> list[AuthorActivityData]:
     return list(data.values())
 
 
-def _generate_table(target: Path, authors: list[AuthorActivityData], num_results: int) -> Table:
+def _generate_table(
+    target: Path, authors: list[AuthorActivityData], num_results: int
+) -> Table:
     """
     Generate a Rich Table summarizing author activity.
     """
 
     total_lines = sum(a.line_count for a in authors)
-    table = Table(title=f"Experts for {target}, showing top {num_results} of {len(authors)}")
+    table = Table(
+        title=f"Experts for {target}, showing top {num_results} of {len(authors)}"
+    )
     table.add_column("Author", style="magenta")
     table.add_column("Lines", justify="right", style="cyan")
     table.add_column("Ownership %", justify="right", style="green")

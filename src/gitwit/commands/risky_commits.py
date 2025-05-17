@@ -22,6 +22,7 @@ class RiskyCommit:
     risk_score: int
     risk_factors: List[RiskFactor] = field(default_factory=list)
 
+
 @dataclass(frozen=True)
 class RiskConfig:
     KEYWORDS: Tuple[str, ...] = (
@@ -32,10 +33,11 @@ class RiskConfig:
         "secret",
         "credentials",
         "fixme",
-        "todo"
+        "todo",
     )
     LINES_CHANGED_THRESHOLD: int = 500
     FILES_CHANGED_THRESHOLD: int = 10
+
 
 RISK_CONFIG = RiskConfig()
 console = ConsoleSingleton.get_console()
@@ -85,13 +87,17 @@ def _identify_risky_commits(since: datetime, until: datetime) -> List[RiskyCommi
 
         if risk_score > 0:
             risky_commits.append(
-                RiskyCommit(commit=commit, risk_score=risk_score, risk_factors=risk_factors)
+                RiskyCommit(
+                    commit=commit, risk_score=risk_score, risk_factors=risk_factors
+                )
             )
 
     return sorted(risky_commits, key=lambda c: c.risk_score, reverse=True)
 
 
-def _assess_lines_changed(total_lines_changed: int, risk_factors: List[RiskFactor]) -> int:
+def _assess_lines_changed(
+    total_lines_changed: int, risk_factors: List[RiskFactor]
+) -> int:
     if total_lines_changed >= RISK_CONFIG.LINES_CHANGED_THRESHOLD:
         risk_factors.append(
             RiskFactor(
