@@ -27,9 +27,7 @@ class DummyEntry(GitLogEntry):
 @pytest.fixture(autouse=True)
 def patch_fetch(monkeypatch):
     """Ensure no real git calls."""
-    monkeypatch.setattr(
-        hz, "get_filtered_commits", lambda since, until, directories, authors: []
-    )
+    monkeypatch.setattr(hz, "get_filtered_commits", lambda since, until, directories, authors: [])
 
 
 def make_iso(days_delta: int, hours: int = 0):
@@ -45,9 +43,7 @@ def make_iso(days_delta: int, hours: int = 0):
 def test_generate_entries__empty():
     since = FIXED_NOW - timedelta(days=5)
     until = FIXED_NOW
-    entries = _collect_file_commit_entries(
-        since=since, until=until, directories=None, authors=None
-    )
+    entries = _collect_file_commit_entries(since=since, until=until, directories=None, authors=None)
 
     assert entries == []
 
