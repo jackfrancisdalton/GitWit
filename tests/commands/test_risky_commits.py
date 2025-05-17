@@ -13,6 +13,7 @@ from gitwit.commands.risky_commits import (
 
 FIXED_NOW = datetime(2023, 1, 1, 12, 0, 0)
 
+
 def create_commit(insertions, deletions, files, message):
     commit_mock = MagicMock(spec=Commit)
     commit_mock.stats.total = {"insertions": insertions, "deletions": deletions}
@@ -23,18 +24,25 @@ def create_commit(insertions, deletions, files, message):
     commit_mock.committed_date = FIXED_NOW.timestamp()
     return commit_mock
 
+
 # ====================================================
 # Tests for: _identify_risky_commits()
 # ====================================================
+
 
 @pytest.mark.parametrize(
     "commit_mock,expected_score,expected_factors",
     [
         # No risk factors (configure to be right on limits of risk values)
         (
-            create_commit(RiskConfig.LINES_CHANGED_THRESHOLD - 1, 0, RiskConfig.FILES_CHANGED_THRESHOLD - 1, "Normal commit"),
+            create_commit(
+                RiskConfig.LINES_CHANGED_THRESHOLD - 1,
+                0,
+                RiskConfig.FILES_CHANGED_THRESHOLD - 1,
+                "Normal commit",
+            ),
             0,
-            []
+            [],
         ),
         # Just above risky number of lines
         (
@@ -43,11 +51,7 @@ def create_commit(insertions, deletions, files, message):
             ["Large number of lines changed"],
         ),
         # Just above risky number of files
-        (
-            create_commit(0, 0, 10, "Normal commit"), 
-            2, 
-            ["Many files modified"]
-        ),
+        (create_commit(0, 0, 10, "Normal commit"), 2, ["Many files modified"]),
         # Sensitive keyword in message
         (
             create_commit(0, 0, 1, "Refactor password logic"),
@@ -56,7 +60,9 @@ def create_commit(insertions, deletions, files, message):
         ),
         # Combination: risky lines and sensitive keyword
         (
-            create_commit(RiskConfig.LINES_CHANGED_THRESHOLD, 0, 1, "Security improvements"),
+            create_commit(
+                RiskConfig.LINES_CHANGED_THRESHOLD, 0, 1, "Security improvements"
+            ),
             5,
             ["Large number of lines changed", "Sensitive keyword in commit message"],
         ),
@@ -72,7 +78,12 @@ def create_commit(insertions, deletions, files, message):
         ),
         # All risk factors combined
         (
-            create_commit(RiskConfig.LINES_CHANGED_THRESHOLD, 0, 11, "Todo: Refactor security logic"),
+            create_commit(
+                RiskConfig.LINES_CHANGED_THRESHOLD,
+                0,
+                11,
+                "Todo: Refactor security logic",
+            ),
             13,
             [
                 "Large number of lines changed",
@@ -118,12 +129,13 @@ def test_identify_risky_commits(
 # Tests for: _assess_lines_changed()
 # ====================================================
 
+
 @pytest.mark.parametrize(
     "lines_changed, expected_score",
     [
-        (RiskConfig.LINES_CHANGED_THRESHOLD - 1, 0), # under the risk limit 
-        (RiskConfig.LINES_CHANGED_THRESHOLD,     2), # on the risk limit
-        (RiskConfig.LINES_CHANGED_THRESHOLD + 1, 2), # above the risk limit
+        (RiskConfig.LINES_CHANGED_THRESHOLD - 1, 0),  # under the risk limit
+        (RiskConfig.LINES_CHANGED_THRESHOLD, 2),  # on the risk limit
+        (RiskConfig.LINES_CHANGED_THRESHOLD + 1, 2),  # above the risk limit
     ],
 )
 def test_assess_lines_changed(lines_changed, expected_score):
@@ -150,9 +162,9 @@ def test_assess_lines_changed(lines_changed, expected_score):
 @pytest.mark.parametrize(
     "files_changed, expected_score",
     [
-        (RiskConfig.FILES_CHANGED_THRESHOLD - 1, 0), # under the risk limit 
-        (RiskConfig.FILES_CHANGED_THRESHOLD,     2), # on the risk limit
-        (RiskConfig.FILES_CHANGED_THRESHOLD + 1, 2), # above the risk limit
+        (RiskConfig.FILES_CHANGED_THRESHOLD - 1, 0),  # under the risk limit
+        (RiskConfig.FILES_CHANGED_THRESHOLD, 2),  # on the risk limit
+        (RiskConfig.FILES_CHANGED_THRESHOLD + 1, 2),  # above the risk limit
     ],
 )
 def test_assess_files_changed(files_changed, expected_score):
@@ -175,13 +187,18 @@ def test_assess_files_changed(files_changed, expected_score):
 # Tests for: _assess_keywords()
 # ====================================================
 
+
 @pytest.mark.parametrize(
     "message, expected_score, expected_keywords",
     [
-        ("Fix security issue", 3, ["security"]),                # Matches on security
-        ("Refactor and update documentation", 3, ["refactor"]), # matches on refactor
-        ("Minor typo fixes", 0, []),                            # no matches
-        ("Add todo and fixme comments", 6, ["fixme", "todo"]),  # multiple matching risk words
+        ("Fix security issue", 3, ["security"]),  # Matches on security
+        ("Refactor and update documentation", 3, ["refactor"]),  # matches on refactor
+        ("Minor typo fixes", 0, []),  # no matches
+        (
+            "Add todo and fixme comments",
+            6,
+            ["fixme", "todo"],
+        ),  # multiple matching risk words
     ],
 )
 def test_assess_keywords(message, expected_score, expected_keywords):

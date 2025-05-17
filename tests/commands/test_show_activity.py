@@ -41,6 +41,7 @@ def commit_data():
 # Tests for: _compute_file_statistics()
 # ====================================================
 
+
 @pytest.mark.parametrize(
     "commit_keys, expected_commit_count, expected_lines",
     [
@@ -75,6 +76,7 @@ def test_compute_file_statistics_cases(
 # ====================================================
 # Tests for: _compute_author_activity_statistics()
 # ====================================================
+
 
 @pytest.mark.parametrize(
     "commit_keys, expected_commit_count, expected_counter",
@@ -120,7 +122,9 @@ def test_compute_author_activity_statistics_cases(
 
     # Last commit date
     if mock_commits:
-        expected_last = max(c.committed_datetime for c in mock_commits).strftime("%Y-%m-%d")
+        expected_last = max(c.committed_datetime for c in mock_commits).strftime(
+            "%Y-%m-%d"
+        )
     else:
         expected_last = "N/A"
     assert stats.last_commit_date == expected_last

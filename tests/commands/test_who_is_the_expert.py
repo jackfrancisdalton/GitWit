@@ -34,7 +34,7 @@ def tmp_dir(tmp_path):
 
     f1.write_text("# file1")
     f2.write_text("# file2")
-    
+
     return d
 
 
@@ -96,6 +96,7 @@ def test_command_dir_success(tmp_dir, monkeypatch, capsys):
 # ====================================================
 # Tests for: _gather_blame_entries()
 # ====================================================
+
 
 def test_gather_blame_entries__file(tmp_file, monkeypatch):
     # Arrange

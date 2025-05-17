@@ -8,74 +8,87 @@ import gitwit.utils.repo_singleton as repo_singleton
 @pytest.fixture
 def patch_repo_ls(monkeypatch):
     """Patch RepoSingleton.get_repo so ls_files returns our list only."""
+
     def _patch(files):
         # clear cached real repo
         repo_singleton.RepoSingleton._repo = None
+
         class DummyRepo:
             def __init__(self, files):
                 self.git = self
                 self._files = files
+
             def ls_files(self):
                 return "\n".join(self._files)
+
             def log(self, *args, **kwargs):
                 return ""  # no log
+
         dummy = DummyRepo(files)
         monkeypatch.setattr(
-            repo_singleton.RepoSingleton,
-            'get_repo',
-            classmethod(lambda cls: dummy)
+            repo_singleton.RepoSingleton, "get_repo", classmethod(lambda cls: dummy)
         )
+
     return _patch
 
 
 @pytest.fixture
 def patch_repo_log(monkeypatch):
     """Patch RepoSingleton.get_repo so git.log returns our raw log only."""
+
     def _patch(raw_log):
         repo_singleton.RepoSingleton._repo = None
+
         class DummyRepoLog:
             def __init__(self, raw):
                 self.git = self
                 self._raw = raw
+
             def log(self, *args, **kwargs):
                 return self._raw
+
             def ls_files(self):
                 return ""  # no files
+
         dummy = DummyRepoLog(raw_log)
         monkeypatch.setattr(
-            repo_singleton.RepoSingleton,
-            'get_repo',
-            classmethod(lambda cls: dummy)
+            repo_singleton.RepoSingleton, "get_repo", classmethod(lambda cls: dummy)
         )
+
     return _patch
 
 
 @pytest.fixture
 def patch_both(monkeypatch):
     """Patch RepoSingleton.get_repo so ls_files and git.log both return specified values."""
+
     def _patch(files, raw_log):
         repo_singleton.RepoSingleton._repo = None
+
         class CombinedRepo:
             def __init__(self, files, raw):
                 self.git = self
                 self._files = files
                 self._raw = raw
+
             def ls_files(self):
                 return "\n".join(self._files)
+
             def log(self, *args, **kwargs):
                 return self._raw
+
         combined = CombinedRepo(files, raw_log)
         monkeypatch.setattr(
-            repo_singleton.RepoSingleton,
-            'get_repo',
-            classmethod(lambda cls: combined)
+            repo_singleton.RepoSingleton, "get_repo", classmethod(lambda cls: combined)
         )
+
     return _patch
 
 
 # =====================================================
 # Tests for _hydrate_examples_and_filter_based_on_git_data
 # =====================================================
+
 
 def test_hydrate_examples_and_filter_based_on_git_data__no_filter(patch_repo_log):
     raw = (
@@ -86,9 +99,9 @@ def test_hydrate_examples_and_filter_based_on_git_data__no_filter(patch_repo_log
     )
     patch_repo_log(raw)
 
-    examples = latest._hydrate_examples_and_filter_based_on_git_data([
-        "foo.py", "bar.py"
-    ], None)
+    examples = latest._hydrate_examples_and_filter_based_on_git_data(
+        ["foo.py", "bar.py"], None
+    )
 
     assert len(examples) == 2
     assert examples[0].path == "foo.py"
@@ -99,7 +112,9 @@ def test_hydrate_examples_and_filter_based_on_git_data__no_filter(patch_repo_log
     assert examples[1].created_at == datetime.fromisoformat("2025-05-03T12:30:00+00:00")
 
 
-def test_hydrate_examples_and_filter_based_on_git_data__author_filter_exact_match(patch_repo_log):
+def test_hydrate_examples_and_filter_based_on_git_data__author_filter_exact_match(
+    patch_repo_log,
+):
     raw = (
         "h1\x002025-05-02T11:00:00+00:00\x00Carol\n"
         "foo.py\n"
@@ -108,16 +123,18 @@ def test_hydrate_examples_and_filter_based_on_git_data__author_filter_exact_matc
     )
     patch_repo_log(raw)
 
-    examples = latest._hydrate_examples_and_filter_based_on_git_data([
-        "foo.py", "bar.py"
-    ], ["Dave"])
+    examples = latest._hydrate_examples_and_filter_based_on_git_data(
+        ["foo.py", "bar.py"], ["Dave"]
+    )
 
     assert len(examples) == 1
     assert examples[0].path == "bar.py"
     assert examples[0].author == "Dave"
 
 
-def test_hydrate_examples_and_filter_based_on_git_data__author_filter_substring(patch_repo_log):
+def test_hydrate_examples_and_filter_based_on_git_data__author_filter_substring(
+    patch_repo_log,
+):
     raw = (
         "h1\x002025-05-02T11:00:00+00:00\x00Jack\n"
         "foo.py\n"
@@ -140,12 +157,10 @@ def test_hydrate_examples_and_filter_based_on_git_data__author_filter_substring(
 # Tests for _find_latest_examples using patch_both
 # =====================================================
 
+
 def test_find_latest_examples_no_matching_files(patch_both):
     files = ["foo.txt", "bar.js"]
-    raw = (
-        "h1\x002025-05-01T00:00:00+00:00\x00Alice\n"
-        "foo.txt\n"
-    )
+    raw = "h1\x002025-05-01T00:00:00+00:00\x00Alice\n" "foo.txt\n"
     patch_both(files, raw)
 
     examples = latest._find_latest_examples(".py", None, None, limit=5)
@@ -244,11 +259,7 @@ def test_find_latest_examples_directories_filter_integration(patch_both):
 
 def test_find_latest_examples_multiple_files_same_commit(patch_both):
     files = ["one.py", "two.py"]
-    raw = (
-        "h1\x002025-05-04T10:00:00+00:00\x00Zed\n"
-        "one.py\n"
-        "two.py\n"
-    )
+    raw = "h1\x002025-05-04T10:00:00+00:00\x00Zed\n" "one.py\n" "two.py\n"
     patch_both(files, raw)
 
     examples = latest._find_latest_examples(".py", None, None, limit=10)

@@ -21,6 +21,7 @@ def mock_repo():
         mock_get_repo.return_value = mock_repo_instance
         yield mock_repo_instance
 
+
 # ====================================================
 # Tests for: get_filtered_commits()
 # ====================================================
@@ -30,15 +31,17 @@ def mock_repo():
     "authors, commit_author, expected_match",
     [
         (["jack"], "Jack Smith", True),  # First name
-        (["ja"], "Jane Doe", True),        # Substring prefix of first name
-        (["ja"], "Raja", True),            # Substring in middle of first name
-        (["ja"], "Michael", False),        # Substring not in name
-        (["smith"], "Jane Smith", True),   # Last name match
+        (["ja"], "Jane Doe", True),  # Substring prefix of first name
+        (["ja"], "Raja", True),  # Substring in middle of first name
+        (["ja"], "Michael", False),  # Substring not in name
+        (["smith"], "Jane Smith", True),  # Last name match
         (["John Doe"], "John Doe", True),  # Exact match (including caps)
         (["jOHn dOe"], "John Doe", True),  # CApitalisation mismatch
     ],
 )
-def test_get_filtered_commits__author_filter(mock_repo, authors, commit_author, expected_match):
+def test_get_filtered_commits__author_filter(
+    mock_repo, authors, commit_author, expected_match
+):
     commit = MagicMock(spec=Commit)
     commit.author.name = commit_author
     mock_repo.iter_commits.return_value = [commit]
@@ -65,7 +68,9 @@ def test_get_filtered_commits__author_filter(mock_repo, authors, commit_author, 
         (["src"], ["lib/file.py"], False),
     ],
 )
-def test_get_filtered_commits__directory_filter(mock_repo, directories, file_paths, expected_match):
+def test_get_filtered_commits__directory_filter(
+    mock_repo, directories, file_paths, expected_match
+):
     commit = MagicMock(spec=Commit)
     commit.stats.files = {f: {} for f in file_paths}
     mock_repo.iter_commits.return_value = [commit]
@@ -81,6 +86,7 @@ def test_get_filtered_commits__directory_filter(mock_repo, directories, file_pat
     else:
         assert len(results) == 0
 
+
 # ====================================================
 # Tests for: fetch_file_paths_tracked_by_git()
 # ====================================================
@@ -95,7 +101,9 @@ def test_get_filtered_commits__directory_filter(mock_repo, directories, file_pat
         ("nonexistent", [], []),
     ],
 )
-def test_fetch_file_paths_tracked_by_git(mock_repo, pattern, directories, expected_result):
+def test_fetch_file_paths_tracked_by_git(
+    mock_repo, pattern, directories, expected_result
+):
     mock_repo.git.ls_files.return_value = "src/main.py\ntests/test_main.py\nREADME.md"
 
     result = fetch_file_paths_tracked_by_git(pattern, directories)
