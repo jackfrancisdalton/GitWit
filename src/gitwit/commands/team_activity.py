@@ -102,25 +102,25 @@ def _generate_activity_table(developers: List[DeveloperActivity]) -> Table:
     table.add_column("Lines Added", justify="right", style="green")
     table.add_column("Lines Deleted", justify="right", style="red")
     table.add_column("Files Touched", justify="right", style="yellow")
-    table.add_column("PRs Merged", justify="right", style="cyan")
-    table.add_column("Reviews Done", justify="right", style="cyan")
-    table.add_column("Review Time Avg", justify="right", style="cyan")
+    # table.add_column("PRs Merged", justify="right", style="cyan")
+    # table.add_column("Reviews Done", justify="right", style="cyan")
+    # table.add_column("Review Time Avg", justify="right", style="cyan")
 
     for dev in developers:
-        review_time = (
-            f"{dev.review_time_avg.seconds//3600}h {(dev.review_time_avg.seconds//60) % 60}m"
-            if dev.reviews_done
-            else "-"
-        )
+        # review_time = (
+        #     f"{dev.review_time_avg.seconds//3600}h {(dev.review_time_avg.seconds//60) % 60}m"
+        #     if dev.reviews_done
+        #     else "-"
+        # )
 
         table.add_row(
             dev.developer,
             str(dev.lines_added),
             str(dev.lines_deleted),
             str(dev.files_touched),
-            str(dev.prs_merged),
-            str(dev.reviews_done),
-            review_time,
+            # str(dev.prs_merged),
+            # str(dev.reviews_done),
+            # review_time,
         )
 
     return table
