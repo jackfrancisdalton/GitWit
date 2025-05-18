@@ -15,21 +15,22 @@
   </a>
 </p>
 
-<p style="text-align: center;">
+<p align="center" style="text-align: center;">
     <img src="./readme-resources/gitwit_logo.png" alt="Gitwit Logo" height="300">
 <p>
 
 # GitWit
 > DISCLAIMER: this project is currently in development
 
-GitWit is a CLI tool that extracts, analyzes, and summarizes Git information to help everyone from team leads to fresh faced junior developers make better, faster, more informed decisions with a couple of key strokes. No api calls required, no payments, it only uses the information already available in your git repositories and runs locally.
+GitWit is a CLI tool that extracts, analyzes, and summarizes Git information to help team members make better, faster, more informed decisions with just a couple of key strokes. 
+No api calls required, no payments, this app exclusivly generates outputs based on the data available in your git repositories.
 
 ## Problem Statment
 This project aims to synergise two statements:
 
 1. In fast-moving software teams git history(s) holds a wealth of insight into team dynamics, code health, and development velocity. 
 
-2.  Engineering leads need visibility into contributions, review cycles, etc.. and new developers need to ramp up quickly by understanding who's working on what, which parts of the codebase are active, etc...
+2.  Engineering leads need visibility into contributions, risky changes, etc.. and new developers need to ramp up quickly by understanding who knows parts of the code base best, which parts of the codebase are active, etc...
 
 By analysing the data available in *1* and exposing it in an appealing way, we can improve the ways all of the needs in *2* are addressed  
 
