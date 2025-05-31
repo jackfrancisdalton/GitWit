@@ -22,8 +22,8 @@
 # GitWit
 > DISCLAIMER: this project is currently in development
 
-GitWit is a CLI tool that extracts, analyzes, and summarizes Git information to help team members make better, faster, more informed decisions with just a couple of key strokes. 
-No api calls required, no payments, this app exclusivly generates outputs based on the data available in your git repositories.
+GitWit is a CLI tool that extracts & summarises Git information to help you make better, faster, more informed decisions with just a couple of key strokes. 
+No api calls required, no payments, this app generates outputs exclusively from the data available in your git repository(s).
 
 ## Problem Statment
 This project aims to synergise two statements:
