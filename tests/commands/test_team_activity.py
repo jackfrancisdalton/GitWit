@@ -32,8 +32,8 @@ class DummyStats:
 def repo_mock(monkeypatch):
     def patch_commits(commits):
         monkeypatch.setattr(team_activity, "get_filtered_commits", lambda **_k: commits)
-    return patch_commits
 
+    return patch_commits
 
 
 # ====================================================

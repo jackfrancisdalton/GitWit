@@ -19,9 +19,8 @@ class RepoSingleton:
     @classmethod
     def get_repo(cls) -> RepoCLI:
         if cls._repo is None:
-            root = (
-                subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], text=True)
-                .strip()
-            )
+            root = subprocess.check_output(
+                ["git", "rev-parse", "--show-toplevel"], text=True
+            ).strip()
             cls._repo = RepoCLI(Path(root))
         return cls._repo
