@@ -30,26 +30,10 @@ class DummyStats:
 
 @pytest.fixture
 def repo_mock(monkeypatch):
-    class RepoMock:
-        def __init__(self, commits):
-            self._commits = commits
+    def patch_commits(commits):
+        monkeypatch.setattr(team_activity, "get_filtered_commits", lambda **_k: commits)
 
-        def iter_commits(self, since=None, until=None, author=None):
-            since_ts = datetime.fromisoformat(since).timestamp() if since else 0
-            until_ts = datetime.fromisoformat(until).timestamp() if until else float("inf")
-
-            filtered_commits = [
-                c
-                for c in self._commits
-                if since_ts <= c.committed_date <= until_ts
-                and (author is None or c.author.name == author)
-            ]
-            return iter(filtered_commits)
-
-    def mock_repo(commits):
-        monkeypatch.setattr(team_activity, "Repo", lambda *_args, **_kwargs: RepoMock(commits))
-
-    return mock_repo
+    return patch_commits
 
 
 # ====================================================

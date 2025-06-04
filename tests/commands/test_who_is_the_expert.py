@@ -55,14 +55,14 @@ def test_command_fetch_error(tmp_file, monkeypatch):
     monkeypatch.setattr(
         file_expert,
         "fetch_file_gitblame",
-        lambda repo, path: (_ for _ in ()).throw(Exception("Git blame failed")),
+        lambda path: (_ for _ in ()).throw(Exception("Git blame failed")),
     )
     with pytest.raises(TyperExit):
         file_expert.command(str(tmp_file))
 
 
 def test_command_empty(tmp_file, monkeypatch):
-    monkeypatch.setattr(file_expert, "fetch_file_gitblame", lambda repo, path: [])
+    monkeypatch.setattr(file_expert, "fetch_file_gitblame", lambda path: [])
     with pytest.raises(TyperExit):
         file_expert.command(str(tmp_file))
 
@@ -70,7 +70,7 @@ def test_command_empty(tmp_file, monkeypatch):
 def test_command_file_success(tmp_file, monkeypatch, capsys):
     # Single blame entry for file
     blame = DummyBlame("Alice", 100, "init commit", 4)
-    monkeypatch.setattr(file_expert, "fetch_file_gitblame", lambda repo, path: [blame])
+    monkeypatch.setattr(file_expert, "fetch_file_gitblame", lambda path: [blame])
     # Limit results to 1
     file_expert.command(str(tmp_file), num_results=1)
     captured = capsys.readouterr()
@@ -94,7 +94,7 @@ def test_command_dir_success(tmp_dir, monkeypatch, capsys):
     )
 
     # Simulate each file returning a single blame entry with author as filename
-    def fake_blame(repo, path):
+    def fake_blame(path):
         name = Path(path).name
         return [DummyBlame(name, 50, f"edit {name}", 1)]
 
@@ -117,16 +117,12 @@ def test_gather_blame_entries__file(tmp_file, monkeypatch):
     # Arrange
     bm = DummyBlame("A", 123, "msg", 2)
 
-    def fake(repo, path):
-        # Now path may be a string; convert to Path for comparison
+    def fake(path):
         assert Path(path) == tmp_file
         return [bm]
 
     monkeypatch.setattr(file_expert, "fetch_file_gitblame", fake)
-    repo = file_expert.Repo(".", search_parent_directories=True)
-
-    # Act
-    entries = _gather_blame_entries(repo, tmp_file)
+    entries = _gather_blame_entries(tmp_file)
 
     # Assert
     assert entries == [bm]
@@ -149,7 +145,7 @@ def test_gather_blame_entries__dir(tmp_dir, monkeypatch):
     b1 = DummyBlame("X", 10, "m1", 1)
     b2 = DummyBlame("Y", 20, "m2", 2)
 
-    def fake(repo, path):
+    def fake(path):
         name = Path(path).name
         if name == "f1.py":
             return [b1]
@@ -158,10 +154,7 @@ def test_gather_blame_entries__dir(tmp_dir, monkeypatch):
         return []
 
     monkeypatch.setattr(file_expert, "fetch_file_gitblame", fake)
-    repo = file_expert.Repo(".", search_parent_directories=True)
-
-    # Act
-    entries = _gather_blame_entries(repo, tmp_dir)
+    entries = _gather_blame_entries(tmp_dir)
 
     # Assert
     assert len(entries) == 2
