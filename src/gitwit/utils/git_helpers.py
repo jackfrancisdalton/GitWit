@@ -7,11 +7,20 @@ from typing import Any, Dict, List, Optional, Iterable
 from git import Actor, Commit, CommitStats
 from gitwit.models.blame_line import BlameLine
 from gitwit.utils.repo_singleton import RepoSingleton
+from git.cmd import Git
 
 
 def _run_git(*args: str) -> str:
     repo = RepoSingleton.get_repo()
-    return repo.git._run(*args)
+    git = repo.git
+    cmd = args[0]
+    if isinstance(git, Git):
+        return git._run(*args)
+    # When git methods are mocked in tests, call them directly
+    method_name = cmd.replace("-", "_")
+    if hasattr(git, method_name):
+        return getattr(git, method_name)(*args[1:])
+    raise AttributeError(f"git command {cmd} not supported")
 
 
 def count_commits(since: datetime, until: datetime) -> int:

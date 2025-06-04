@@ -52,6 +52,9 @@ def _fetch_developer_activities(since_datetime: datetime, until_datetime: dateti
             until=until_datetime,
         )
     )
+    since_ts = since_datetime.timestamp()
+    until_ts = until_datetime.timestamp()
+    commits = [c for c in commits if since_ts <= c.committed_date <= until_ts]
     total = len(commits)
 
     activities = {}

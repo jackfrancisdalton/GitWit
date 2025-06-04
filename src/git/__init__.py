@@ -3,18 +3,18 @@ from datetime import datetime
 from typing import Dict
 
 
-@dataclass
+@dataclass(slots=True)
 class Actor:
     name: str
 
 
-@dataclass
+@dataclass(slots=True)
 class CommitStats:
     total: Dict[str, int]
     files: Dict[str, Dict[str, int]]
 
 
-@dataclass
+@dataclass(slots=True)
 class Commit:
     hexsha: str
     author: Actor
@@ -24,5 +24,11 @@ class Commit:
     stats: CommitStats
 
 
+from .cmd import Git
+
+
 class Repo:
-    pass
+    __slots__ = ("git",)
+
+    def __init__(self, path: str = "."):
+        self.git = Git(path)
