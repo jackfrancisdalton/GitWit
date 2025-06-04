@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict
 
+from .cmd import Git
+
 
 @dataclass(slots=True)
 class Actor:
@@ -22,9 +24,6 @@ class Commit:
     committed_date: int
     message: str
     stats: CommitStats
-
-
-from .cmd import Git
 
 
 class Repo:
