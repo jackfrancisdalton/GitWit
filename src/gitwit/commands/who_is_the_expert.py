@@ -32,7 +32,6 @@ def command(
     Determine who the expert is for a given file or directory based on blame ownership and recency.
     """
     target = Path(path)
-    repo = RepoSingleton.get_repo()
 
     if not target.exists():
         console.print(f"[red]Error:[/red] Path '{target}' does not exist.")
