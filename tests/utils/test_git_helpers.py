@@ -18,6 +18,7 @@ FIXED_NOW = datetime(2023, 1, 1, 12, 0, 0)
 def mock_repo():
     with patch("gitwit.utils.repo_singleton.RepoSingleton.get_repo") as mock_get_repo:
         mock_repo_instance = MagicMock(spec=Repo)
+        mock_repo_instance.git = MagicMock()
         mock_get_repo.return_value = mock_repo_instance
         yield mock_repo_instance
 
@@ -40,9 +41,12 @@ def mock_repo():
     ],
 )
 def test_get_filtered_commits__author_filter(mock_repo, authors, commit_author, expected_match):
-    commit = MagicMock(spec=Commit)
-    commit.author.name = commit_author
-    mock_repo.iter_commits.return_value = [commit]
+    log = (
+        f"hash\x00{commit_author}\x00{FIXED_NOW.isoformat()}\x00msg\x00\n"
+        + "\n".join(["1\t1\tfile.py"])
+        + "\x00"
+    )
+    mock_repo.git.log.return_value = log
 
     since = FIXED_NOW - timedelta(days=1)
     until = FIXED_NOW
@@ -51,7 +55,7 @@ def test_get_filtered_commits__author_filter(mock_repo, authors, commit_author, 
 
     if expected_match:
         assert len(results) == 1
-        assert results[0] == commit
+        assert isinstance(results[0], Commit)
     else:
         assert len(results) == 0
 
@@ -67,9 +71,9 @@ def test_get_filtered_commits__author_filter(mock_repo, authors, commit_author, 
     ],
 )
 def test_get_filtered_commits__directory_filter(mock_repo, directories, file_paths, expected_match):
-    commit = MagicMock(spec=Commit)
-    commit.stats.files = {f: {} for f in file_paths}
-    mock_repo.iter_commits.return_value = [commit]
+    numstat = "\n".join([f"1\t1\t{p}" for p in file_paths])
+    log = f"hash\x00Author\x00{FIXED_NOW.isoformat()}\x00msg\x00\n{numstat}\x00"
+    mock_repo.git.log.return_value = log
 
     since = FIXED_NOW - timedelta(days=1)
     until = FIXED_NOW
@@ -78,7 +82,7 @@ def test_get_filtered_commits__directory_filter(mock_repo, directories, file_pat
 
     if expected_match:
         assert len(results) == 1
-        assert results[0] == commit
+        assert isinstance(results[0], Commit)
     else:
         assert len(results) == 0
 
@@ -127,7 +131,7 @@ def test_fetch_file_gitblame__success(mock_repo):
         ]
     )
 
-    result = fetch_file_gitblame(mock_repo, Path("src/main.py"))
+    result = fetch_file_gitblame(Path("src/main.py"))
 
     assert len(result) == 1
     assert isinstance(result[0], BlameLine)
@@ -153,4 +157,4 @@ def test_fetch_file_gitblame__error(mock_repo):
     mock_repo.git.blame.side_effect = Exception("git blame failed")
 
     with pytest.raises(BlameFetchError, match="failed to fetch or parse blame"):
-        fetch_file_gitblame(mock_repo, Path("src/main.py"))
+        fetch_file_gitblame(Path("src/main.py"))

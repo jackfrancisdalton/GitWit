@@ -3,9 +3,9 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 import typer
-from git import Repo
 from rich.table import Table
 from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn
+from gitwit.utils.repo_singleton import RepoSingleton
 
 from gitwit.models.blame_line import BlameLine
 from gitwit.utils.console_singleton import ConsoleSingleton
@@ -32,14 +32,14 @@ def command(
     Determine who the expert is for a given file or directory based on blame ownership and recency.
     """
     target = Path(path)
-    repo = Repo(".", search_parent_directories=True)
+    repo = RepoSingleton.get_repo()
 
     if not target.exists():
         console.print(f"[red]Error:[/red] Path '{target}' does not exist.")
         raise typer.Exit(code=1)
 
     try:
-        blame_entries = _gather_blame_entries(repo, target)
+        blame_entries = _gather_blame_entries(target)
     except Exception as e:
         console.print(f"[red]Error running git blame:[/red] {e}")
         raise typer.Exit(code=1)
@@ -55,11 +55,13 @@ def command(
 
 
 # TODO: this need to be improved to ignore untracked directories
-def _gather_blame_entries(repo: Repo, target: Path) -> list[BlameLine]:
+def _gather_blame_entries(target: Path) -> list[BlameLine]:
     """
     Return a combined list of BlameLine entries for a file or all files under a directory,
     fetching each in parallel with a progress bar.
     """
+
+    repo = RepoSingleton.get_repo()
 
     if target.is_dir():
         files_to_process = repo.git.ls_files(str(target)).splitlines()
@@ -81,7 +83,7 @@ def _gather_blame_entries(repo: Repo, target: Path) -> list[BlameLine]:
         max_workers = min(8, len(files_to_process))
         with ThreadPoolExecutor(max_workers=max_workers) as pool:
             futures = {
-                pool.submit(fetch_file_gitblame, repo, path): path for path in files_to_process
+                pool.submit(fetch_file_gitblame, Path(path)): path for path in files_to_process
             }
 
             for future in as_completed(futures):

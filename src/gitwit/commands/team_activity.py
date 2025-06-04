@@ -2,7 +2,6 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import List
 import typer
-from git import Repo
 from rich.table import Table
 from rich.progress import (
     Progress,
@@ -14,6 +13,7 @@ from rich.progress import (
 
 from gitwit.utils.console_singleton import ConsoleSingleton
 from gitwit.utils.typer_helpers import handle_since_until_arguments
+from gitwit.utils.git_helpers import get_filtered_commits
 
 
 @dataclass
@@ -46,9 +46,11 @@ def command(
 
 
 def _fetch_developer_activities(since_datetime: datetime, until_datetime: datetime):
-    repo = Repo(".", search_parent_directories=True)
     commits = list(
-        repo.iter_commits(since=since_datetime.isoformat(), until=until_datetime.isoformat())
+        get_filtered_commits(
+            since=since_datetime,
+            until=until_datetime,
+        )
     )
     total = len(commits)
 
