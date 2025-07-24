@@ -82,7 +82,7 @@ def _identify_risky_commits(since: datetime, until: datetime) -> List[RiskyCommi
         risk_score += _assess_files_changed(files_changed, risk_factors)
         risk_score += _assess_keywords(str(commit.message), risk_factors)
 
-        # TODO: implement in the future
+        # TODO: implement feature to assess if a file is the first time a given user has authered the file in the future
         # risk_score += _assess_first_time_files()
 
         if risk_score > 0:

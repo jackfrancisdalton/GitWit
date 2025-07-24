@@ -54,7 +54,6 @@ def command(
     console.print(table)
 
 
-# TODO: this need to be improved to ignore untracked directories
 def _gather_blame_entries(repo: Repo, target: Path) -> list[BlameLine]:
     """
     Return a combined list of BlameLine entries for a file or all files under a directory,
